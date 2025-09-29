@@ -1,21 +1,24 @@
 import requests
 
-REMOTIVE_URL = "https://remotive.com/api/remote-jobs"
+remotive_url = "https://remotive.com/api/remote-jobs"
 
-def get_params(search: str = "", category: str = "", company: str = "", limit: int = 10) -> dict:
+def get_params(search: str = "", 
+               category: str = "", 
+               company: str = "", 
+               location: str="") -> dict:
     params :dict= {}
     if search and search.strip():
-        p["search"] = search.strip()
+        params["search"] = search.strip()
     if category and category.strip():
-        p["category"] = category.strip()
+        params["category"] = category.strip()
     if company and company.strip():
-        p["company_name"] = company.strip()
-    if isinstance(limit, int) and limit > 0:
-        p["limit"] = limit
+        params["company_name"] = company.strip()
+    if location and location.strip():
+        params["candidate_required_location"] = location.strip()
     return params
 
 def fetch_remotive(params: dict) -> list[dict]:
-    r = requests.get(REMOTIVE_URL, params=params, timeout=30)
+    r = requests.get(remotive_url, params=params, timeout=30)
     r.raise_for_status()
     data = r.json()
     return data.get("jobs", [])

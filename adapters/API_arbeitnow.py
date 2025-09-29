@@ -4,41 +4,44 @@ from pandas import json_normalize
 from datetime import datetime
 
 
-baseurl = 'https://www.arbeitnow.com/api/job-board-api'
+arbeitnow_url = 'https://www.arbeitnow.com/api/job-board-api'
 
 
-def main_requests(baseurl):
-    r = requests.get(baseurl, timeout=30)
+def get_params(search: str = "", 
+               category: str = "", 
+               company: str = "",  
+               location: str=""
+               ) -> dict:
+    params :dict= {}
+    if search and search.strip():
+        params["search"] = search.strip()
+    if category and category.strip():
+        params["category"] = category.strip()
+    if company and company.strip():
+        params["company_name"] = company.strip()
+    if location and location.strip():
+        params["location"] = location.strip()
+    return params
+
+def fetch_arbeitnow(params: dict) -> list[dict]:
+    r = requests.get(arbeitnow_url, params=params, timeout=30)
     r.raise_for_status()
-    return r.json()
+    data = r.json() or {}
+    jobs = data.get("data") or data.get("jobs")
+    return jobs if isinstance(jobs, list) else []
 
 
-
-def parse_json(response):
-    return [
-        {
-            "title": job['title'],
-            "company": job['company_name'],
-            "location": job['location'],
-            "url": job['url'],
-            "created_at": job['created_at'],
-        }
-        for job in response.get('data', [])
-    ]
+def normalize_arbeitnow(job: dict) -> dict:
+    return {
+        "id": f"arbeitnow:{job.get('id')or job.get('slug')}",
+        "source": "arbeitnow",
+        "title": job.get("title"),
+        "company": job.get("company_name"),
+        "location": job.get("candidate_required_location"),
+        "url": job.get("url"),
+        "posted_at": job.get("created_at"),
+    }
 
 
-
-all_jobs = []
-for page in range(1,7):
-    print('Seite', page)
-    page_data = main_requests(baseurl)
-    all_jobs.extend(parse_json(page_data))
-
-
-    df = pd.DataFrame(all_jobs)
-df
-
-
-
-xlsx_filename = f"Arbeit_Now_1{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-df.to_excel('Arbeit_Now_1.xlsx', index=False)
+def normalize_arbeitnow_list(rows: list[dict]) -> list[dict]:
+    return [normalize_arbeitnow(j) for j in rows]

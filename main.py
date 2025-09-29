@@ -6,44 +6,48 @@ from datetime import datetime
 # imports der verschiedene API's und Struktur 
 from adapters.API_remotive import get_params as params_remotive, fetch_remotive, normalize_remotive, normalize_remotive_list
 from adapters.API_budenagentur import get_params as params_agentur, fetch_agentur, normalize_agentur, normalize_agentur_list
+from adapters.API_arbeitnow import get_params as params_arbeitnow, fetch_arbeitnow, normalize_arbeitnow, normalize_arbeitnow_list
 
-
-    # Hier kommen unsere User_inputs
+    # Einrichtung unserer Suchparametern:
 def main():
 
     search = input("Suchbegriff (z. B. Data Analyst): ")
-    category = input("Kategorie (leer lassen falls keine): ")
+    category = input("Berufsfeld (leer lassen falls keine): ")
     company = input("Firmenname (leer lassen falls keine): ")
-    try:
-        limit = int(input("Limit Anzahl Ergebnisse (z. B. 10): ") or 10)
-        limit=10
-    except ValueError:
-        limit = 10
-
+    location =input("Berufsort (leer lassen falls keine)")
 
     common_params = {
             "search": search,
             "category": category,
             "company": company,
-            "limit": limit
+            "location": location,
     }
 
-
+# Einrichtung der Bundesagentur API
     params_for_agentur= params_agentur(**common_params)
     raw_agentur = fetch_agentur(params_for_agentur)
     jobs_agentur = normalize_agentur_list(raw_agentur)
 
+# Einrichtung der Remotive API
     params_for_remotive = params_remotive(**common_params)
     raw_remotive = fetch_remotive(params_for_remotive)
     jobs_remotive = normalize_remotive_list(raw_remotive)
 
+# Einrichtung der Arbeitnow API
+    params_for_arbeitnow = params_arbeitnow(**common_params)
+    raw_arbeitnow = fetch_arbeitnow(params_for_arbeitnow)
+    jobs_arbeitnow= normalize_arbeitnow_list(raw_arbeitnow)
+
+# Die Jeweiligen zukomnenden APIs hier einfügen.
 
 
-    jobs_all = jobs_agentur + jobs_remotive 
+#Concat der verschieden APIs
+    jobs_all = jobs_agentur + jobs_remotive + jobs_arbeitnow
     print(f"Total jobs: {len(jobs_all)}")
-    
-    for job in jobs_all[:10]:
-        print(f"{job['source']:<20} | {job['title']:<50} | {job['company']:<30} | {job['location']}")
+
+#Anzeige der ersten 50 Jobs um den terminal nicht zu explodieren:
+    for job in jobs_all[:50]:
+        print(f"{job['source']:<50} | {job['title']:<50} | {job['company']:<50} | {job['location']}")
 
 if __name__ == "__main__":
     main()
