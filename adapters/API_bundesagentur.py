@@ -29,7 +29,7 @@ def fetch_agentur(params: dict) -> list[dict]:
     r.raise_for_status()
     data = r.json()
     return data.get("stellenangebote", [])
-  
+
 
 def normalize_agentur(job: dict) -> dict:
     # Normalisierung der Suchbegriffe für ein dict. Nicht für die Dict liste !
@@ -47,3 +47,8 @@ def normalize_agentur_list(rows: list[dict]) -> list[dict]:
     return [normalize_agentur(j) for j in rows]
 
 
+""" ???
+In welche Variable wird die normalisierte Liste gespeichert?
+Damit wir die Variable in die main.py importieren können,
+vom Modul adapters.
+"""

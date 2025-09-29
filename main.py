@@ -1,14 +1,15 @@
-
+# Bibliotheken importieren
+from adapters import arbeitnow, bundesagentur, remotive
 import os
 import json
 from datetime import datetime
 
-# imports der verschiedene API's und Struktur 
+# API's importieren
+from adapters.API_arbeitnow import get_params as params_arbeitnow, fetch_arbeitnow, normalize_arbeitnow, normalize_arbeitnow_list
+from adapters.API_bundesagentur import get_params as params_agentur, fetch_agentur, normalize_agentur, normalize_agentur_list
 from adapters.API_remotive import get_params as params_remotive, fetch_remotive, normalize_remotive, normalize_remotive_list
-from adapters.API_budenagentur import get_params as params_agentur, fetch_agentur, normalize_agentur, normalize_agentur_list
 
-
-    # Hier kommen unsere User_inputs
+# User Inputs
 def main():
 
     search = input("Suchbegriff (z. B. Data Analyst): ")
@@ -28,6 +29,9 @@ def main():
             "limit": limit
     }
 
+    params_for_arbeitnow = params_arbeitnow(**common_params)
+    raw_arbeitnow = fetch_arbeitnow(params_for_agentur)
+    jobs_arbeitnow = normalize_arbeitnow_list(raw_agentur)
 
     params_for_agentur= params_agentur(**common_params)
     raw_agentur = fetch_agentur(params_for_agentur)
@@ -39,9 +43,9 @@ def main():
 
 
 
-    jobs_all = jobs_agentur + jobs_remotive 
+    jobs_all = jobs_arbeitnow + jobs_agentur + jobs_remotive
     print(f"Total jobs: {len(jobs_all)}")
-    
+
     for job in jobs_all[:10]:
         print(f"{job['source']:<20} | {job['title']:<50} | {job['company']:<30} | {job['location']}")
 
