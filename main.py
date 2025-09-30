@@ -1,15 +1,15 @@
 # Bibliotheken importieren
-from adapters import arbeitnow, bundesagentur, remotive
+from adapters import API_budenagentur, API_arbeitnow, API_remotive
 import os
 import json
 from datetime import datetime
+import pandas as pd
 
 # API's importieren
 from adapters.API_arbeitnow import get_params as params_arbeitnow, fetch_arbeitnow, normalize_arbeitnow, normalize_arbeitnow_list
-from adapters.API_bundesagentur import get_params as params_agentur, fetch_agentur, normalize_agentur, normalize_agentur_list
 from adapters.API_remotive import get_params as params_remotive, fetch_remotive, normalize_remotive, normalize_remotive_list
 from adapters.API_budenagentur import get_params as params_agentur, fetch_agentur, normalize_agentur, normalize_agentur_list
-from adapters.API_arbeitnow import get_params as params_arbeitnow, fetch_arbeitnow, normalize_arbeitnow, normalize_arbeitnow_list
+
 
 # User Inputs
     # Einrichtung unserer Suchparametern:
@@ -48,6 +48,10 @@ def main():
 #Concat der verschieden APIs
     jobs_all = jobs_agentur + jobs_remotive + jobs_arbeitnow
     print(f"Total jobs: {len(jobs_all)}")
+    # Excel Export:
+    out_file = f"jobs_{datetime.now().strftime('%Y%m%d_Jobs_sammlung')}.xlsx"
+    pd.DataFrame(jobs_all).to_excel(out_file, index=False)
+    print("Exportiert nach:", out_file)
 
 #Anzeige der ersten 50 Jobs um den terminal nicht zu explodieren:
     for job in jobs_all[:50]:
@@ -55,3 +59,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
