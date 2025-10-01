@@ -41,12 +41,10 @@ def main():
         print(j["title"], "-", j["company"],"-", j["url"])
     
     
-    export_dir= "exports"
+    os.makedirs("exports", exist_ok=True)  # Herstellt file falls nötig
 
-    out_file = os.path.join(
-    export_dir,
-    f"{datetime.now().strftime('%Y%m%d_Jobs_sammlung')}.xlsx")
-
+    out_file = f"exports/{datetime.now().strftime('%Y%m%d')}_Jobs_sammlung.xlsx"
+    pd.DataFrame(all_normalized).to_excel(out_file, index=False)
     print("Exportiert nach:", out_file)
 ##############################################################################################
 if __name__ == "__main__":
