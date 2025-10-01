@@ -38,7 +38,7 @@ def main():
 
     print(f"Gesamt normalisierte Jobs: {len(all_normalized)}")
     for j in all_normalized[:5]:
-        print(j["title"], "-", j["company"],"-" j["url"])
+        print(j["title"], "-", j["company"],"-", j["url"])
     
     
     export_dir= "exports"
