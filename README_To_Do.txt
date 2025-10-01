@@ -1,12 +1,8 @@
-<div style="background:#0b3d91;color:#fff;padding:12px;border-radius:6px;">
-🚀 <strong>JobScout Daily</strong>
-</div>
-
-```bash
 JobScout Daily sammelt täglich Jobs von verschiedenen Jobportalen.
 │
 ├─ Jobangebote
 │  ├─ für eine gewisse Anzahl an konkreten Jobtiteln die jeweils ersten X Treffer
+      # Wie viele? ->      # Zahl konkrete Jobtitel          # Zahl erste Treffer
 │  ├─ Strukturierte Daten sind hier die Suchkriterien der verschiedenen Jobportale, die als gemeinsame, einheitliche Parameter festgelegt wurden, sowie die Ergebnisse der Suche.
 │  └─ Die Normalisierung sorgt dafür, das die Jobangebote aus allen APIs zusammengefügt werden können.
 │
@@ -25,4 +21,3 @@ JobScout Daily sammelt täglich Jobs von verschiedenen Jobportalen.
    ├─ Python
    ├─ Pandas
    └─ PostgreSQL
-```
