@@ -2,7 +2,7 @@ import requests
 
 remotive_url = "https://remotive.com/api/remote-jobs"
 
-def get_params(search: str = "", 
+def get_params_remotive(search: str = "", 
                category: str = "", 
                company: str = "", 
                location: str="") -> dict:

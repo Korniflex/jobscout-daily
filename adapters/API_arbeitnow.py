@@ -7,7 +7,7 @@ from datetime import datetime
 arbeitnow_url = 'https://www.arbeitnow.com/api/job-board-api'
 
 
-def get_params(search: str = "", 
+def get_params_arbeitnow(search: str = "", 
                category: str = "", 
                company: str = "",  
                location: str=""

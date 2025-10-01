@@ -9,7 +9,7 @@ headers = {
     "X-API-Key": "jobboerse-jobsuche"
 }
 
-def get_params(search: str = "", 
+def get_params_agentur(search: str = "", 
                category: str = "", 
                company: str = "", 
                location: str="") -> dict:

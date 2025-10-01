@@ -1,5 +1,5 @@
 # Bibliotheken importieren
-from adapters import API_budenagentur, API_arbeitnow, API_remotive
+from adapters import API_arbeitnow, API_bundesagentur, API_remotive
 import os
 import json
 from datetime import datetime
@@ -8,8 +8,10 @@ import pandas as pd
 # API's importieren
 from adapters.API_arbeitnow import get_params as params_arbeitnow, fetch_arbeitnow, normalize_arbeitnow, normalize_arbeitnow_list
 from adapters.API_remotive import get_params as params_remotive, fetch_remotive, normalize_remotive, normalize_remotive_list
-from adapters.API_budenagentur import get_params as params_agentur, fetch_agentur, normalize_agentur, normalize_agentur_list
-
+from adapters.API_bundesagentur import get_params as params_agentur, fetch_agentur, normalize_agentur, normalize_agentur_list
+from core import orchestrator
+from core.orchestrator import load_params
+from core.normalizer import normalize_jobs
 
 # User Inputs
     # Einrichtung unserer Suchparametern:
@@ -44,6 +46,8 @@ def main():
 
 # Die Jeweiligen zukomnenden APIs hier einfügen.
 
+
+##################################################################################
 
 #Concat der verschieden APIs
     jobs_all = jobs_agentur + jobs_remotive + jobs_arbeitnow
