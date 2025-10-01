@@ -1,2 +1,46 @@
-jobs_20250929_Jobs_sammlung.xlsx
-~$jobs_20250929_144857.xlsx
+# Byte-compiled / optimierte / dynamische Dateien
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite-Datenbanken, Datenbankname später anpassen, oder alle SQLite-Dateien ignorieren
+*.sqlite3
+Datenbank.db
+
+# Virtuelle Umgebungen
+venv/
+.env/
+.venv/
+env/
+ENV/
+
+# Log- und temporäre Dateien
+*.log
+*.tmp
+*.bak
+
+# CSV/Export-Dateien
+*.csv
+*.xlsx
+*.xls
+*.json
+
+# Icon- und generierte Dateien
+*.ico
+*.png
+
+# Betriebssystem-spezifisch
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE-spezifisch
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python build/Distribution
+build/
+dist/
+*.egg-info/
