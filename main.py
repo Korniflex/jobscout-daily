@@ -1,20 +1,12 @@
-# Bibliotheken importieren
-from adapters import API_arbeitnow, API_bundesagentur, API_remotive
-import os
-import json
-from datetime import datetime
-import pandas as pd
-
-# API's importieren
-from adapters.API_arbeitnow import get_params as params_arbeitnow, fetch_arbeitnow, normalize_arbeitnow, normalize_arbeitnow_list
-from adapters.API_remotive import get_params as params_remotive, fetch_remotive, normalize_remotive, normalize_remotive_list
-from adapters.API_bundesagentur import get_params as params_agentur, fetch_agentur, normalize_agentur, normalize_agentur_list
-from core import orchestrator
 from core.orchestrator import load_params
 from core.normalizer import normalize_jobs
+from core.schema import Job
 
-# User Inputs
-    # Einrichtung unserer Suchparametern:
+from datetime import datetime
+import pandas as pd
+import os
+
+
 def main():
 
     search = input("Suchbegriff (z. B. Data Analyst): ")
@@ -28,39 +20,32 @@ def main():
             "company": company,
             "location": location,
     }
+    all_raws= load_params(common_params)
+    all_normalized= normalize_jobs(all_raws)
 
-# Einrichtung der Bundesagentur API
-    params_for_agentur= params_agentur(**common_params)
-    raw_agentur = fetch_agentur(params_for_agentur)
-    jobs_agentur = normalize_agentur_list(raw_agentur)
-
-# Einrichtung der Remotive API
-    params_for_remotive = params_remotive(**common_params)
-    raw_remotive = fetch_remotive(params_for_remotive)
-    jobs_remotive = normalize_remotive_list(raw_remotive)
-
-# Einrichtung der Arbeitnow API
-    params_for_arbeitnow = params_arbeitnow(**common_params)
-    raw_arbeitnow = fetch_arbeitnow(params_for_arbeitnow)
-    jobs_arbeitnow= normalize_arbeitnow_list(raw_arbeitnow)
-
-# Die Jeweiligen zukomnenden APIs hier einfügen.
+    # Hier weiter: 
+    # 
+    # -> dedupe 
+    # 
+    # -> DB upsert 
+    # 
+    # -> print/return
 
 
-##################################################################################
 
-#Concat der verschieden APIs
-    jobs_all = jobs_agentur + jobs_remotive + jobs_arbeitnow
-    print(f"Total jobs: {len(jobs_all)}")
-    # Excel Export:
-    out_file = f"jobs_{datetime.now().strftime('%Y%m%d_Jobs_sammlung')}.xlsx"
-    pd.DataFrame(jobs_all).to_excel(out_file, index=False)
+########################################################################################
+#Temporäres Excel File
+
+    print(f"Gesamt normalisierte Jobs: {len(all_normalized)}")
+    for j in all_normalized[:5]:
+        print(j["title"], "-", j["company"],"-", j["url"])
+    
+    
+    os.makedirs("exports", exist_ok=True)  # Herstellt file falls nötig
+
+    out_file = f"exports/{datetime.now().strftime('%Y%m%d')}_Jobs_sammlung.xlsx"
+    pd.DataFrame(all_normalized).to_excel(out_file, index=False)
     print("Exportiert nach:", out_file)
-
-#Anzeige der ersten 50 Jobs um den terminal nicht zu explodieren:
-    for job in jobs_all[:50]:
-        print(f"{job['source']:<50} | {job['title']:<50} | {job['company']:<50} | {job['location']}")
-
+##############################################################################################
 if __name__ == "__main__":
     main()
-

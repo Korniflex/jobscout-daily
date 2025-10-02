@@ -1,4 +1,7 @@
+import json
 import requests
+from core.schema import Job
+
 
 remotive_url = "https://remotive.com/api/remote-jobs"
 
@@ -23,7 +26,7 @@ def fetch_remotive(params: dict) -> list[dict]:
     data = r.json()
     return data.get("jobs", [])
 
-def normalize_remotive(job: dict) -> dict:
+def normalize_remotive(job: dict) -> Job:
     return {
         "id": f"remotive:{job.get('id')}",
         "source": "remotive",
@@ -34,5 +37,5 @@ def normalize_remotive(job: dict) -> dict:
         "posted_at": job.get("publication_date"),
     }
 
-def normalize_remotive_list(rows: list[dict]) -> list[dict]:
+def normalize_remotive_list(rows: list[dict]) -> list[Job]:
     return [normalize_remotive(j) for j in rows]

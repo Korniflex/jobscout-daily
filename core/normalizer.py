@@ -1,8 +1,9 @@
 from adapters import normalize_agentur, normalize_arbeitnow, normalize_remotive,normalize_arbeitnow_list, normalize_agentur_list, normalize_remotive_list
+from core.schema import Job # Einsetzung der Klasse
 
 # Wir wollen die Ergebnisse von load_params() die in raw_jobs sind, normalisieren.
 # Hier weiß ich nicht ob die Funktionen Sinn machen. 
-def normalize_jobs(all_raw_jobs:dict) ->list [dict]:
+def normalize_jobs(all_raw_jobs:dict) ->list [Job]:
     normalized_jobs: list[dict]= []
 
     # Remotive

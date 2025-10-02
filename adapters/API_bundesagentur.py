@@ -1,7 +1,6 @@
 import json
-from datetime import datetime
 import requests
-import pandas as pd
+from core.schema import Job
 
 agentur_url = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs"
 # API-Key (für die öffentliche Jobsuche ist ein Standard-Key vorhanden)
@@ -44,7 +43,7 @@ def _extract_location(sa: dict):
         return json.dumps(loc, ensure_ascii=False)
     return loc
 
-def normalize_agentur(job: dict) -> dict:
+def normalize_agentur(job: dict) -> Job:
     # Normalisierung der Suchbegriffe für ein dict. Nicht für die Dict liste !
     return {
         "id": f"agenturfuerarbeit:{job.get('id')}",
@@ -56,7 +55,7 @@ def normalize_agentur(job: dict) -> dict:
         "url": job.get("url")
     }
 # Wir müssen noch die normalize_agentur einbauen, sodass sie die ganze liste normalisiert, und nicht nur das erste dict unserer Liste
-def normalize_agentur_list(rows: list[dict]) -> list[dict]:
+def normalize_agentur_list(rows: list[dict]) -> list[Job]:
     return [normalize_agentur(j) for j in rows]
 
 

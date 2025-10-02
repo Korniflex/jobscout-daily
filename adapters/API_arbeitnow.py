@@ -1,7 +1,6 @@
+import json
 import requests
-import pandas as pd
-from pandas import json_normalize
-from datetime import datetime
+from core.schema import Job
 
 
 arbeitnow_url = 'https://www.arbeitnow.com/api/job-board-api'
@@ -31,7 +30,7 @@ def fetch_arbeitnow(params: dict) -> list[dict]:
     return jobs if isinstance(jobs, list) else []
 
 
-def normalize_arbeitnow(job: dict) -> dict:
+def normalize_arbeitnow(job: dict) -> Job:
     return {
         "id": f"arbeitnow:{job.get('id')or job.get('slug')}",
         "source": "arbeitnow",
@@ -43,5 +42,5 @@ def normalize_arbeitnow(job: dict) -> dict:
     }
 
 
-def normalize_arbeitnow_list(rows: list[dict]) -> list[dict]:
+def normalize_arbeitnow_list(rows: list[dict]) -> list[Job]:
     return [normalize_arbeitnow(j) for j in rows]
