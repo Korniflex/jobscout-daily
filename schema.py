@@ -2,9 +2,11 @@
 # Es verhindert, Errors zu bekommen, wenn felder leer sind. 
 # Es ist eine stabielere Variante als unsere get_params
 # wird für unsere selbstgebaute API sehr nützlich
-from pydantic import BaseModel, HttpUrl
+
+from pyd
 from typing import Optional
 from datetime import datetime
+
 
 class Job(BaseModel):
     
