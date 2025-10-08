@@ -3,7 +3,7 @@
 # Es ist eine stabielere Variante als unsere get_params
 # wird für unsere selbstgebaute API sehr nützlich
 
-from pyd
+from pydantic import BaseModel, HttpUrl
 from typing import Optional
 from datetime import datetime
 

@@ -6,9 +6,16 @@ from core.schema import Job
 remotive_url = "https://remotive.com/api/remote-jobs"
 
 def get_params_remotive(search: str = "", 
-               category: str = "", 
-               company: str = "", 
-               location: str="") -> dict:
+            category: str = "", 
+            company: str = "", 
+            location: str="",
+            posted_since: str = "",
+            work_mode: str = "",
+            remote: str = "",
+            limit: str = "",
+            page: str = "",
+            ) -> dict:
+
     params :dict= {}
     if search and search.strip():
         params["search"] = search.strip()
@@ -18,6 +25,16 @@ def get_params_remotive(search: str = "",
         params["company_name"] = company.strip()
     if location and location.strip():
         params["candidate_required_location"] = location.strip()
+    if posted_since and posted_since.strip():
+        params["publication_date"] = posted_since.strip()
+    if work_mode and work_mode.strip():
+        params["job_type"] = work_mode.strip()
+    if remote and remote.strip():
+        params['remote'] = remote.strip() 
+    if limit:
+        params["limit"] = limit
+    if page:
+        params['page'] = page
     return params
 
 def fetch_remotive(params: dict) -> list[dict]:

@@ -9,9 +9,14 @@ headers = {
 }
 
 def get_params_agentur(search: str = "", 
-               category: str = "", 
-               company: str = "", 
-               location: str="") -> dict:
+            category: str = "", 
+            company: str = "", 
+            location: str="",
+            posted_since: str = "",
+            work_mode: str = "",
+            limit: str = "",
+            page: str = ""
+            ) -> dict:
     """Baut die Parameter für die Bundesagentur-API basierend auf Benutzereingaben."""
     params: dict = {}
     if search and search.strip():
@@ -22,7 +27,14 @@ def get_params_agentur(search: str = "",
         params["arbeitgeber"] = company.strip()
     if location and location.strip():
         params["arbeitsorte"]= location.strip()
-    params["page"] = 1
+    if posted_since and posted_since.strip():
+        params["ersteVeroeffentlichungsdatum"] = posted_since.strip()
+    if work_mode and work_mode.strip():
+        params["arbeitszeitmodelle"] = work_mode.strip()
+    if limit:
+        params["limit"] = limit
+    if page:
+        params['page'] = page
     
     return params
 # Response

@@ -8,11 +8,18 @@ arbeitnow_url = 'https://www.arbeitnow.com/api/job-board-api'
 
 
 def get_params_arbeitnow(search: str = "", 
-               category: str = "", 
-               company: str = "",  
-               location: str=""
-               ) -> dict:
+            category: str = "", 
+            company: str = "", 
+            location: str="",
+            posted_since: str = "",
+            work_mode: str = "",
+            remote : str = "",
+            page: int = 0,
+            limit : int = "",
+            ) -> dict:
+
     params :dict= {}
+
     if search and search.strip():
         params["search"] = search.strip()
     if category and category.strip():
@@ -21,6 +28,16 @@ def get_params_arbeitnow(search: str = "",
         params["company_name"] = company.strip()
     if location and location.strip():
         params["location"] = location.strip()
+    if posted_since and posted_since.strip():
+        params["created_at"] = posted_since.strip()
+    if work_mode and work_mode.strip():
+        params["job_types"] = work_mode.strip()
+    if remote and remote.strip():
+        params["remote"] = remote.strip()
+    if page:
+        params["page"] = page
+    if limit:
+        params["limit"]= limit
     return params
 
 def fetch_arbeitnow(params: dict) -> list[dict]:

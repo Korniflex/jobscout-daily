@@ -2,16 +2,16 @@
 # Es verhindert, Errors zu bekommen, wenn felder leer sind. 
 # Es ist eine stabielere Variante als unsere get_params
 # wird für unsere selbstgebaute API sehr nützlich
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, Field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Job(BaseModel):
     
     source : str
     id: str
     
-    title: str
+    title:  Optional[str] = None
     job_type :  Optional[str] = None
     remote :  Optional[str] = None
     tags :  Optional[str] = None
@@ -21,7 +21,7 @@ class Job(BaseModel):
     location : Optional[str] = None
     
     posted_at :  Optional[str] = None
-    fetched_at : datetime
+    fetched_at : datetime = Field(default_factory=datetime.now)
     url : HttpUrl
 
 class CommonQuery(BaseModel):
@@ -30,7 +30,7 @@ class CommonQuery(BaseModel):
     company: Optional[str] = None
     location: Optional[str] = None
     posted_since: Optional[str] = None
-    mode: Optional[str] = None
+    work_mode: Optional[str] = None
     limit: int = 50
     page: int = 1
 
