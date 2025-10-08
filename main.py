@@ -4,7 +4,6 @@ from core.schema import Job, CommonQuery
 from adapters import get_params_remotive,fetch_remotive,get_params_agentur, fetch_agentur, get_params_arbeitnow, fetch_arbeitnow
 
 from datetime import datetime
-from pydantic import mode
 import pandas as pd
 import os
 
