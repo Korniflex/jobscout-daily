@@ -43,17 +43,21 @@ def _extract_location(sa: dict):
         return json.dumps(loc, ensure_ascii=False)
     return loc
 
+2
 def normalize_agentur(job: dict) -> Job:
-    # Normalisierung der Suchbegriffe für ein dict. Nicht für die Dict liste !
+    job_id = job.get("hashId") or job.get("id")  # "hashId" ist der eigentliche Identifier
+    url = f"https://www.arbeitsagentur.de/jobsuche/jobdetail/{job_id}" if job_id else None
+
     return {
-        "id": f"agenturfuerarbeit:{job.get('id')}",
+        "id": f"agenturfuerarbeit:{job_id}",
         "source": "agenturfuerarbeit",
         "title": job.get("beruf"),
         "company": job.get("arbeitgeber"),
         "location": _extract_location(job),
         "posted_at": job.get("aktuelleVeroeffentlichungsdatum"),
-        "url": job.get("url")
+        "url": url,
     }
+    
 # Wir müssen noch die normalize_agentur einbauen, sodass sie die ganze liste normalisiert, und nicht nur das erste dict unserer Liste
 def normalize_agentur_list(rows: list[dict]) -> list[Job]:
     return [normalize_agentur(j) for j in rows]

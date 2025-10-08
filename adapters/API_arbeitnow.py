@@ -1,5 +1,6 @@
 import json
 import requests
+from datetime import datetime
 from core.schema import Job
 
 
@@ -38,7 +39,9 @@ def normalize_arbeitnow(job: dict) -> Job:
         "company": job.get("company_name"),
         "location": job.get("candidate_required_location"),
         "url": job.get("url"),
-        "posted_at": job.get("created_at"),
+        "posted_at": datetime.fromtimestamp(job["created_at"]).isoformat()
+                           if isinstance(job.get("created_at"), (int, float))
+                           else job.get("created_at"),
     }
 
 
