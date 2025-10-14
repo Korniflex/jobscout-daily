@@ -49,18 +49,48 @@ def fetch_arbeitnow(params: dict) -> list[dict]:
 
 
 def normalize_arbeitnow(job: dict) -> Job:
+    # job_types ist oft eine liste
+    jtypes = job.get("job_types") or []
+    if isinstance(jtypes, str):
+        jtypes = [jtypes]
+    jt = ", ".join([s for s in jtypes if s]) or None
+
+    # remote = bool 
+    remote_flag = job.get("remote")
+    remote_mode = None
+    if isinstance(remote_flag, bool):
+        remote_mode = "remote" if remote_flag else None
+    elif jt:
+        jt_lower = jt.lower()
+        if "remote" in jt_lower:
+            remote_mode = "remote"
+        elif "hybrid" in jt_lower:
+            remote_mode = "hybrid"
+
+    # fallback location
+    loc = job.get("candidate_required_location") or job.get("location") or None
+
+    # posted_at int timestamp oder ISO
+    created = job.get("created_at")
+    if isinstance(created, (int, float)):
+        try:
+            created_iso = datetime.fromtimestamp(created).isoformat()
+        except Exception:
+            created_iso = None
+    else:
+        created_iso = created
+
     return {
-        "id": f"arbeitnow:{job.get('id')or job.get('slug')}",
+        "id": f"arbeitnow:{job.get('id') or job.get('slug')}",
         "source": "arbeitnow",
         "title": job.get("title"),
         "company": job.get("company_name"),
-        "location": job.get("candidate_required_location"),
+        "location": loc,
+        "job_type": jt,
+        "remote": remote_mode,
         "url": job.get("url"),
-        "posted_at": datetime.fromtimestamp(job["created_at"]).isoformat()
-                           if isinstance(job.get("created_at"), (int, float))
-                           else job.get("created_at"),
+        "posted_at": created_iso,
     }
-
 
 def normalize_arbeitnow_list(rows: list[dict]) -> list[Job]:
     return [normalize_arbeitnow(j) for j in rows]

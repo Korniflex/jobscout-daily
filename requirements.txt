@@ -20,3 +20,5 @@ pytest
 
 # Jupyter notebooks 
 jupyter
+
+psychopg2
