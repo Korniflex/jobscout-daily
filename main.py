@@ -1,7 +1,7 @@
 from core.orchestrator import load_params
 from core.normalizer import normalize_jobs
 from core.schema import Job, CommonQuery
-from adapters import get_params_remotive,fetch_remotive,get_params_agentur, fetch_agentur, get_params_arbeitnow, fetch_arbeitnow
+from adapters import get_params_remotive,fetch_remotive,get_params_agentur, fetch_agentur, get_params_arbeitnow, fetch_arbeitnow,  get_params_jobicy, fetch_jobicy
 
 from datetime import datetime
 import pandas as pd
