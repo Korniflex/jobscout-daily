@@ -1,7 +1,7 @@
 from core.orchestrator import load_params
 from core.normalizer import normalize_jobs
 from core.schema import Job, CommonQuery
-from adapters import get_params_remotive,fetch_remotive,get_params_agentur, fetch_agentur, get_params_arbeitnow, fetch_arbeitnow
+from adapters import get_params_remotive,fetch_remotive,get_params_agentur, fetch_agentur, get_params_arbeitnow, fetch_arbeitnow ,get_params_jobicy, fetch_jobicy
 
 from datetime import datetime
 import pandas as pd
@@ -31,9 +31,9 @@ def upsert_jobs(jobs: list[Job]):
     """
     for job in jobs:
         # baut einen eindeutigen String aus Jobtitel, Firma, Ort, Source, ID und Arbeitsmodus
-        raw_str = f"{job.title}-{job.company}-{job.location}-{job.source}-{job.id}-{job.job_type}"
+        raw_str = f"{job.title}-{job.company}-{job.location}-{job.source}-{job.id}-{job.job_type}-{job.source}"
         hash_value = hashlib.sha256(raw_str.encode("utf-8")).hexdigest()    # erzeugt daraus einen Fingerabdruck (Hash), also eine eindeutige ID
-
+        print(f"[DB] inserting : {job.title} | {job.company}")
         try:
             cursor.execute("""
                 INSERT INTO jobs (source, title, company, location, job_type, posted_at, url, hash_value)
@@ -50,7 +50,6 @@ def upsert_jobs(jobs: list[Job]):
                 hash_value
             ))
             conn.commit()
-            print(f"Gespeichert: {job.title} @ {job.company} ({job.job_type})")
 
         except Exception as e:
             # conn.rollback() einfügen, wenn ein Fehler passiert:
@@ -58,7 +57,6 @@ def upsert_jobs(jobs: list[Job]):
             print(f"Fehler bei {job.title} @ {job.company} ({job.job_type}): {e}")
             # Wenn beim INSERT ein Fehler passiert (zB doppelter Schlüssel, falscher Datentyp), bricht PostgreSQL die aktuelle Transaktion ab
             # rollback setzt nur die fehlerhafte Transaktion zurück. Danach kann das Skript weiterlaufen und die nächsten Jobs einfügen!
-
 
 IT_SYNONYMS = [
     "IT", "Informatik", "Software", "Softwareentwicklung", "Tech", "Technology",
@@ -93,7 +91,6 @@ def main():
 
 ########################################################################################
 #Temporäres Excel File
-
     print(f"Gesamt normalisierte Jobs: {len(all_normalized)}")
     for j in all_normalized[:5]:
         print(j.title, "|", j.company, "|", j.location, "|", j.remote, "|",  j.url)
@@ -104,8 +101,10 @@ def main():
     out_file = f"exports/{datetime.now().strftime('%Y%m%d')}_Jobs_sammlung.xlsx"
     pd.DataFrame([j.model_dump() for j in all_normalized]).to_excel(out_file, index=False)
     print("Exportiert nach:", out_file)
+
 ##############################################################################################
 if __name__ == "__main__":
     main()
     cursor.close()
     conn.close()
+
