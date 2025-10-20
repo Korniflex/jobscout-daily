@@ -63,6 +63,7 @@ def normalize_jobicy(job: dict) -> Job:
         "id": f"jobicy:{job.get('id') or job.get('jobSlug')}",
         "source": "jobicy",
         "title": job.get("jobTitle"),
+        "job_type" : job.get("jobType"),
         "company": job.get("companyName"),
         "location": job.get("jobGeo"),
         "url": job.get("url"),
