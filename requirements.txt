@@ -22,3 +22,8 @@ pytest
 jupyter
 
 psychopg2
+
+slack-bot
+slack-sdk
+python-dotenv
+flask

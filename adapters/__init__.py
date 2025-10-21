@@ -1,4 +1,7 @@
 
+# =====================
+# Zweck: Bequeme Sammel-Exporte fuer die Adapter-Funktionen.
+# Hinweis: Kommentare/Titel auf Deutsch.
 
 from .API_bundesagentur import fetch_agentur, normalize_agentur, normalize_agentur_list, get_params_agentur
 from .API_remotive import fetch_remotive, normalize_remotive, normalize_remotive_list, get_params_remotive
