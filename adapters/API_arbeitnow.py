@@ -7,6 +7,18 @@ from core.schema import Job
 
 arbeitnow_url = 'https://www.arbeitnow.com/api/job-board-api'
 
+def _strip_parens(text):
+    """Entfernt alles in runden Klammern, überflüssige Leerzeichen
+    und ggf. Ortsangaben am Ende des Titels."""
+    if not text:
+        return text
+    # Entfernt Text in runden Klammern, z. B. "(m/w/d)"
+    text = re.sub(r"\s*\([^)]*\)", "", str(text))
+    # Entfernt doppelte Leerzeichen
+    text = re.sub(r"\s{2,}", " ", text)
+    # Entfernt "in [Ort]" am Ende des Titels (z. B. "Manager in Berlin" → "Manager")
+    text = re.sub(r"\s+in\s+[A-ZÄÖÜ][a-zäöüß\- ]+$", "", text)
+    return text.strip()
 
 def get_params_arbeitnow(search: str = "", 
             category: str = "", 
@@ -93,10 +105,14 @@ def normalize_arbeitnow(job: dict) -> Job:
     else:
         job_id = str(job_id).strip()
 
+           # Titel bereinigen (ohne Klammern, etc.)
+    clean_title = _strip_parens(job.get("title"))
+
+
     return {
         "id": f"arbeitnow:{job_id}",
         "source": "arbeitnow",
-        "title": job.get("title"),
+        "title": "clean_title",
         "company": job.get("company_name"),
         "location": loc,
         "job_type": jt,
@@ -107,60 +123,3 @@ def normalize_arbeitnow(job: dict) -> Job:
 
 def normalize_arbeitnow_list(rows: list[dict]) -> list[Job]:
     return [normalize_arbeitnow(j) for j in rows]
-
-
-def normalize_arbeitnow(job: dict) -> Job:
-    # job_types ist oft eine liste
-    jtypes = job.get("job_types") or []
-    if isinstance(jtypes, str):
-        jtypes = [jtypes]
-    jt = ", ".join([s for s in jtypes if s]) or None
-
-    # remote = bool 
-    remote_flag = job.get("remote")
-    remote_mode = None
-    if isinstance(remote_flag, bool):
-        remote_mode = "remote" if remote_flag else None
-    elif jt:
-        jt_lower = jt.lower()
-        if "remote" in jt_lower:
-            remote_mode = "remote"
-        elif "hybrid" in jt_lower:
-            remote_mode = "hybrid"
-
-    # fallback location
-    loc = job.get("candidate_required_location") or job.get("location") or None
-
-    # posted_at: int timestamp oder ISO
-    created = job.get("created_at")
-    if isinstance(created, (int, float)):
-        try:
-            created_iso = datetime.fromtimestamp(created).isoformat()
-        except Exception:
-            created_iso = None
-    else:
-        created_iso = created
-
-    # -------- ID: "arbeitnow:<id>"
-    jid = job.get("id")
-    if not jid:
-        slug_or_url = (job.get("slug") or job.get("url") or "").strip()
-        m = re.search(r"(\d+)(?:/?$)", slug_or_url) 
-        if m:
-            jid = m.group(1)
-        else:
-            jid = slug_or_url.rstrip("/").split("/")[-1] if slug_or_url else "unknown"
-    else:
-        jid = str(jid).strip()
-
-    return {
-        "id": f"arbeitnow:{jid}",
-        "source": "arbeitnow",
-        "title": job.get("title"),
-        "company": job.get("company_name"),
-        "location": loc,
-        "job_type": jt,
-        "remote": remote_mode,
-        "url": job.get("url"),
-        "posted_at": created_iso,
-    }
