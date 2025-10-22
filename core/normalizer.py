@@ -60,8 +60,8 @@ def normalize_jobs(all_raw_jobs: dict) -> list[Job]:
     if all_raw_jobs.get("remotive_raw"):
         rows += normalize_remotive_list(all_raw_jobs["remotive_raw"])
 
-    if all_raw_jobs.get("agentur_raw"):
-        rows += normalize_agentur_list(all_raw_jobs["agentur_raw"])
+    #if all_raw_jobs.get("agentur_raw"):
+    #   rows += normalize_agentur_list(all_raw_jobs["agentur_raw"])
 
     if all_raw_jobs.get("arbeitnow_raw"):
         rows += normalize_arbeitnow_list(all_raw_jobs["arbeitnow_raw"])

@@ -42,15 +42,12 @@ def get_params_jobicy(
 
 
 def fetch_jobicy(params: dict) -> list[dict]:
- 
     try:
-        r = requests.get(jobicy_url, timeout=30)
+        r = requests.get(jobicy_url, params=params, timeout=30)
         r.raise_for_status()
         data = r.json()
         jobs = data.get("jobs", [])
         print(f"  Jobicy_raw: {len(jobs)} jobs gefunden")
-        if jobs:
-            print(f"    Besipiel: {jobs[0].get('title')}")
         return jobs
     except Exception as e:
         print("Error Jobicy:", e)

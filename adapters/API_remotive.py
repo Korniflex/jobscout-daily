@@ -46,8 +46,6 @@ def fetch_remotive(params: dict) -> list[dict]:
         data = r.json()
         jobs = data.get("jobs", [])
         print(f"  remotive_raw: {len(jobs)} jobs gefunden")
-        if jobs:
-            print(f"    Besipiel: {jobs[0].get('title')}")
         return jobs
     except Exception as e:
         print("Error Remotive:", e)

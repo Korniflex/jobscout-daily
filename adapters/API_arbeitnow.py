@@ -61,9 +61,7 @@ def fetch_arbeitnow(params: dict) -> list[dict]:
         jobs = data.get("data") or data.get("jobs")
         print(f"  Arbeitnow_raw: {len(jobs)} jobs gefunden")
         if jobs:
-            print(f"    Besipiel: {jobs[0].get('title')}")
-            return jobs
-        return []
+            return []
     except Exception as e:
         print("Error Arbeitnow:", e)
         return []

@@ -37,13 +37,13 @@ def load_params(cq: Union[CommonQuery, Dict]) -> Dict[str, List]:
     cq_map = _to_kwargs(cq)
 
     params_remotive   = get_params_remotive(**cq_map)
-    params_agentur    = get_params_agentur(**cq_map)
+    #params_agentur    = get_params_agentur(**cq_map)
     params_arbeitnow  = get_params_arbeitnow(**cq_map)
     params_jobicy     = get_params_jobicy(**cq_map)
 
     raw = {
         "remotive_raw":   fetch_remotive(params_remotive),
-        "agentur_raw":    fetch_agentur(params_agentur),
+    #    "agentur_raw":    fetch_agentur(params_agentur),
         "arbeitnow_raw":  fetch_arbeitnow(params_arbeitnow),
         "jobicy_raw":     fetch_jobicy(params_jobicy),
     }

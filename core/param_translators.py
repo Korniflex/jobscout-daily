@@ -102,7 +102,7 @@ def to_arbeitnow(cq: CommonQuery) -> Dict[str, Any]:
     return _clean_params(raw)
 
 
-def to_agentur(cq: CommonQuery) -> Dict[str, Any]:
+'''def to_agentur(cq: CommonQuery) -> Dict[str, Any]:
     """
     Gibt Argumente passend zu get_params_agentur(...)
     Unterstützt in Eurem Adapter:
@@ -118,7 +118,7 @@ def to_agentur(cq: CommonQuery) -> Dict[str, Any]:
         "limit":        getattr(cq, "limit", None),
         "page":         getattr(cq, "page", None),
     }
-    return _clean_params(raw)
+    return _clean_params(raw)'''
 
 
 def to_jobicy(cq: CommonQuery) -> Dict[str, Any]:

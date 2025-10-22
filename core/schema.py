@@ -2,7 +2,7 @@
 # Es verhindert, Errors zu bekommen, wenn felder leer sind. 
 # Es ist eine stabielere Variante als unsere get_params
 # wird für unsere selbstgebaute API sehr nützlich
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, HttpUrl, Field,AnyHttpUrl
 from typing import Optional
 from datetime import datetime, timezone
 
@@ -22,7 +22,7 @@ class Job(BaseModel):
     
     posted_at :  Optional[str] = None
     fetched_at : datetime = Field(default_factory=datetime.now)
-    url : HttpUrl
+    url : AnyHttpUrl
 
 class CommonQuery(BaseModel):
     search: Optional[str] = None
