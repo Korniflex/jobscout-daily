@@ -54,11 +54,19 @@ def get_params_arbeitnow(search: str = "",
     return params
 
 def fetch_arbeitnow(params: dict) -> list[dict]:
-    r = requests.get(arbeitnow_url, params=params, timeout=30)
-    r.raise_for_status()
-    data = r.json() or {}
-    jobs = data.get("data") or data.get("jobs")
-    return jobs if isinstance(jobs, list) else []
+    try:
+        r = requests.get(arbeitnow_url, params=params, timeout=30)
+        r.raise_for_status()
+        data = r.json() or {}
+        jobs = data.get("data") or data.get("jobs")
+        print(f"  Arbeitnow_raw: {len(jobs)} jobs gefunden")
+        if jobs:
+            print(f"    Besipiel: {jobs[0].get('title')}")
+            return jobs
+        return []
+    except Exception as e:
+        print("Error Arbeitnow:", e)
+        return []
 
 
 def normalize_arbeitnow(job: dict) -> Job:
