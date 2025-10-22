@@ -9,7 +9,8 @@ import os
 
 import psycopg2
 import hashlib
-
+from dotenv import load_dotenv
+load_dotenv()
 
 # PostgreSQL Verbindung:
 conn = psycopg2.connect(
