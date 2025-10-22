@@ -75,6 +75,6 @@ def normalize_jobs(all_raw_jobs: dict) -> list[Job]:
             r = _preprocess_row(r)
             jobs.append(Job(**r))
         except Exception as e:
-            print("Überspringe ungültige Zeile", i, e)
+            print(" Skip invalid row", i, "| Source:", r.get("source"), "| URL:", r.get("url"), "| Fehler:", e)
 
     return jobs

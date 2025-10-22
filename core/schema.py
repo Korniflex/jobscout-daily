@@ -22,7 +22,7 @@ class Job(BaseModel):
     
     posted_at :  Optional[str] = None
     fetched_at : datetime = Field(default_factory=datetime.now)
-    url : AnyHttpUrl
+    url : Optional[AnyHttpUrl] = None
 
 class CommonQuery(BaseModel):
     search: Optional[str] = None

@@ -47,10 +47,7 @@ def main():
 #Temporäres Excel File
 
     print(f"Gesamt normalisierte Jobs: {len(all_normalized)}")
-    for j in all_normalized[:5]:
-        print(j.title, "|", j.company, "|", j.location, "|", j.remote, "|",  j.url)
-    
-    
+ 
     os.makedirs("exports", exist_ok=True)  # Herstellt file falls nötig
 
     out_file = f"exports/{datetime.now().strftime('%Y%m%d')}_Jobs_sammlung.xlsx"
