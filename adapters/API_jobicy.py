@@ -48,7 +48,7 @@ def fetch_jobicy(params: dict) -> list[dict]:
         r.raise_for_status()
         data = r.json()
         jobs = data.get("jobs", [])
-        print(f"  remotive_raw: {len(jobs)} jobs gefunden")
+        print(f"  jobicy_raw: {len(jobs)} jobs gefunden")
         if jobs:
             print(f"    Besipiel: {jobs[0].get('title')}")
         return jobs
