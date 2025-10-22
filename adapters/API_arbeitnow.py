@@ -112,7 +112,7 @@ def normalize_arbeitnow(job: dict) -> Job:
     return {
         "id": f"arbeitnow:{job_id}",
         "source": "arbeitnow",
-        "title": "clean_title",
+        "title": clean_title,
         "company": job.get("company_name"),
         "location": loc,
         "job_type": jt,
