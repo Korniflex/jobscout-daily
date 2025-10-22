@@ -7,7 +7,7 @@ from core.schema import Job
 
 arbeitnow_url = 'https://www.arbeitnow.com/api/job-board-api'
 
-'''def _strip_parens(text):
+def _strip_parens(text):
     """Entfernt alles in runden Klammern, überflüssige Leerzeichen
     und ggf. Ortsangaben am Ende des Titels."""
     if not text:
@@ -18,7 +18,7 @@ arbeitnow_url = 'https://www.arbeitnow.com/api/job-board-api'
     text = re.sub(r"\s{2,}", " ", text)
     # Entfernt "in [Ort]" am Ende des Titels (z. B. "Manager in Berlin" → "Manager")
     text = re.sub(r"\s+in\s+[A-ZÄÖÜ][a-zäöüß\- ]+$", "", text)
-    return text.strip()'''
+    return text.strip()
 
 def get_params_arbeitnow(search: str = "", 
             category: str = "", 
@@ -61,7 +61,7 @@ def fetch_arbeitnow(params: dict) -> list[dict]:
         jobs = data.get("data") or data.get("jobs")
         print(f"  Arbeitnow_raw: {len(jobs)} jobs gefunden")
         if jobs:
-            return []
+            return jobs
     except Exception as e:
         print("Error Arbeitnow:", e)
         return []
@@ -112,7 +112,6 @@ def normalize_arbeitnow(job: dict) -> Job:
         job_id = str(job_id).strip()
 
            # Titel bereinigen (ohne Klammern, etc.)
-""" clean_title = _strip_parens(job.get("title"))"""
 
 
     return {

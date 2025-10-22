@@ -43,15 +43,58 @@ def get_params_jobicy(
 
 def fetch_jobicy(params: dict) -> list[dict]:
     try:
-        r = requests.get(jobicy_url, params=params, timeout=30)
+        api_params = {}
+        if 'limit' in params:
+            api_params['count'] = params['limit']
+        
+        r = requests.get(jobicy_url, params=api_params, timeout=30)
         r.raise_for_status()
         data = r.json()
         jobs = data.get("jobs", [])
+        
+        # Lokale Filterung nach category/search
+        if params.get('category') or params.get('search'):
+            jobs = [j for j in jobs if _matches_filters(j, params)]
+        
         print(f"  Jobicy_raw: {len(jobs)} jobs gefunden")
         return jobs
     except Exception as e:
-        print("Error Jobicy:", e)
+        print(f"Error Jobicy: {e}")
         return []
+
+def _matches_filters(job: dict, params: dict) -> bool:
+    """Lokale Filterung da API keine Parameter unterstützt"""
+    category = params.get('category', '').lower()
+    search = params.get('search', '').lower()
+    
+    # Wenn weder category noch search gesetzt sind, alle Jobs durchlassen
+    if not category and not search:
+        return True
+    
+    if category:
+        # Probiere verschiedene Felder für Kategorie
+        job_industry = str(job.get('jobIndustry', '')).lower()
+        job_category = str(job.get('category', '')).lower()
+        job_title = str(job.get('jobTitle', '')).lower()
+        
+        # Suche in allen relevanten Feldern
+        if category in job_industry or category in job_category or category in job_title:
+            return True
+        
+        # Wenn category="IT" ist, suche auch nach "software", "developer", etc.
+        if category == 'it':
+            it_keywords = ['software', 'developer', 'engineer', 'programming', 'tech', 'data', 'it ']
+            if any(kw in job_title or kw in job_industry for kw in it_keywords):
+                return True
+        
+        return False
+    
+    if search:
+        searchable = f"{job.get('jobTitle', '')} {job.get('companyName', '')} {job.get('jobIndustry', '')}".lower()
+        if search not in searchable:
+            return False
+    
+    return True
 
 
 def normalize_jobicy(job: dict) -> Job:

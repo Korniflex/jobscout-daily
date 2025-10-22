@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: jobscout-backend
+    env: python
+    buildCommand: pip install -r requirements_render.txt
+    startCommand: python main_new.py
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false
