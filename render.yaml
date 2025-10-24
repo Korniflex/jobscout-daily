@@ -8,3 +8,16 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+
+  - type: web
+    name: jobscout-slackbot
+    env: python
+    buildCommand: pip install -r requirements_render.txt
+    startCommand: uvicorn slackbot_app:flask_app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SLACK_SIGNING_SECRET
+        sync: false
+      - key: SLACK_BOT_TOKEN
+        sync: false

@@ -1,15 +1,15 @@
-
 #!/usr/bin/env python3
 # coding: utf-8
 """
-Slack Slash Command App fuer /jobs
+Slack Slash Command App für /jobs
 Voraussetzungen:
-  - Pakete: slack-bolt, slack-sdk, flask, pydantic, requests, python-dotenv
-  - Umgebungsvariablen:
+  - Pakete: slack-bolt, slack-sdk, flask, psycopg2-binary, python-dotenv (optional)
+  - ENV Variablen:
       SLACK_SIGNING_SECRET=...
       SLACK_BOT_TOKEN=xoxb-...
+      DATABASE_URL=postgres://... (Neon)
   - Slack App Config:
-      Slash Command: /jobs  ->  https://<host>/slack/commands
+      Slash Command: /jobs  ->  https://<host>/slack/events   (oder /slack/commands, beide Routen sind vorhanden)
 """
 
 import os
@@ -20,7 +20,7 @@ from flask import Flask, request, jsonify
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 
-# Optional: .env laden, falls vorhanden
+# Optional: .env laden (lokal hilfreich)
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -28,36 +28,33 @@ except Exception:
     pass
 
 # Eigene Module
-from core.schema import CommonQuery
-from core.orchestrator import load_params
-from core.normalizer import normalize_jobs
+from core.db_conn import get_conn  # <- NEON Verbindung
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("slackbot.jobs")
 
-# Slack App initialisieren
-slack_app = App(
+# -------------------------------------------------------------------
+# Slack App initialisieren (Bolt)
+# -------------------------------------------------------------------
+bolt_app = App(
     token=os.environ.get("SLACK_BOT_TOKEN"),
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
 )
 
-# Flask App fuer HTTP Empfang
+# Flask App für HTTP Empfang
 flask_app = Flask(__name__)
-handler = SlackRequestHandler(slack_app)
+handler = SlackRequestHandler(bolt_app)
 
-# ------------------------------------------------------------
-# Hilfsfunktionen
-# ------------------------------------------------------------
+# -------------------------------------------------------------------
+# Hilfsfunktionen: Query-Parsing & DB-Lesen
+# -------------------------------------------------------------------
 
 def _split_text(text: str) -> tuple[Optional[str], Optional[str]]:
     """
-    Einfache Heuristik fuer den Slash-Text:
-      - Erstes Wort = location (nur falls mindestens 2 Woerter vorhanden sind)
-      - Rest        = search
-      Beispiele:
-        "berlin analyst" -> ("berlin", "analyst")
-        "analyst"        -> (None, "analyst")
-        ""               -> (None, None)
+    Einfache Heuristik:
+      - 2+ Wörter: erstes = location, rest = search
+      - 1 Wort   : search
+      - sonst    : nichts
     """
     parts = (text or "").strip().split()
     if not parts:
@@ -66,94 +63,112 @@ def _split_text(text: str) -> tuple[Optional[str], Optional[str]]:
         return None, parts[0]
     return parts[0], " ".join(parts[1:])
 
-def parse_text_to_common_query(text: str) -> CommonQuery:
+def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: int = 10) -> list[tuple]:
     """
-    Erzeugt IMMER ein CommonQuery-Objekt (kein dict), um Punktzugriffe sicher zu machen.
+    Liest die letzten Jobs aus Neon.
+    Filter:
+      - search   -> ILIKE über title/company/location
+      - location -> zusätzliches ILIKE auf location
     """
-    location, search = _split_text(text)
+    conn = get_conn()
+    cur = conn.cursor()
+    if search and location:
+        cur.execute("""
+            SELECT source,title,company,location,job_type,posted_at,url
+            FROM jobs
+            WHERE (title ILIKE %s OR company ILIKE %s OR location ILIKE %s)
+              AND (location ILIKE %s)
+            ORDER BY id DESC
+            LIMIT %s
+        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{location}%", limit))
+    elif search:
+        cur.execute("""
+            SELECT source,title,company,location,job_type,posted_at,url
+            FROM jobs
+            WHERE title ILIKE %s OR company ILIKE %s OR location ILIKE %s
+            ORDER BY id DESC
+            LIMIT %s
+        """, (f"%{search}%", f"%{search}%", f"%{search}%", limit))
+    elif location:
+        cur.execute("""
+            SELECT source,title,company,location,job_type,posted_at,url
+            FROM jobs
+            WHERE location ILIKE %s
+            ORDER BY id DESC
+            LIMIT %s
+        """, (f"%{location}%", limit))
+    else:
+        cur.execute("""
+            SELECT source,title,company,location,job_type,posted_at,url
+            FROM jobs
+            ORDER BY id DESC
+            LIMIT %s
+        """, (limit,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
 
-    # Nur erlaubte Felder an CommonQuery uebergeben
-    cq = CommonQuery(
-        search=search or None,
-        location=location or None,
-        category="IT",
-        limit=25,
-    )
-    return cq
-
-def format_jobs_blocks(jobs) -> List[dict]:
+def format_jobs_blocks(rows: list[tuple]) -> List[dict]:
     """
-    Slack Blocks fuer eine kompakte Ausgabe erzeugen.
-    Zeigt max. 10 Eintraege.
+    Slack Blocks kompakt. rows: (source,title,company,location,job_type,posted_at,url)
     """
-    max_rows = 10
     blocks: List[dict] = []
-    if not jobs:
-        blocks.append({
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": "Keine Ergebnisse gefunden."}
-        })
+    if not rows:
+        blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": "Keine Ergebnisse gefunden."}})
         return blocks
 
-    blocks.append({
-        "type": "section",
-        "text": {"type": "mrkdwn", "text": f"*{len(jobs)} Treffer gefunden*  (zeige bis zu {max_rows})"}
-    })
+    blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": f"*{len(rows)} Treffer gefunden*  (zeige bis zu 10)"}})
     blocks.append({"type": "divider"})
 
-    for j in jobs[:max_rows]:
-        title = j.title or "(ohne Titel)"
-        company = j.company or "(ohne Firma)"
-        location = j.location or "(ohne Ort)"
-        source = j.source or ""
-        url = str(j.url) if getattr(j, "url", None) else None
-        mode = j.job_type or j.remote or ""
+    for r in rows[:10]:
+        source, title, company, location, job_type, posted_at, url = r
+        title = title or "(ohne Titel)"
+        company = company or "(ohne Firma)"
+        location = location or "(ohne Ort)"
+        mode = job_type or ""
         line = f"*{title}*  bei *{company}*  {f'[{mode}]' if mode else ''}\n{location}  ·  Quelle: {source}"
         if url:
             line += f"\n<{url}|Zur Stelle>"
 
-        blocks.append({
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": line}
-        })
+        blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": line}})
         blocks.append({"type": "divider"})
-
     return blocks
 
-# ------------------------------------------------------------
-# Slash Command
-# ------------------------------------------------------------
-
-@slack_app.command("/jobs")
-def handle_jobs(ack, respond, command, logger):
+# -------------------------------------------------------------------
+# Slash Command: /jobs
+# -------------------------------------------------------------------
+@bolt_app.command("/jobs")
+def cmd_jobs(ack, respond, command):
     """
-    Slash Command Handler fuer /jobs
-    Beispiel: /jobs berlin analyst
+    /jobs [location] [search...]
+    Beispiele:
+      /jobs berlin analyst
+      /jobs analyst
+      /jobs berlin
     """
     try:
-        ack()  # Sofort bestaetigen
-
+        ack()  # schnelle Bestätigung < 3s
         text = command.get("text") or ""
-        cq = parse_text_to_common_query(text)   # IMMER CommonQuery, kein dict
-
-        # Daten abrufen und normalisieren
-        raw = load_params(cq)               # robust gegen CommonQuery/dict
-        jobs = normalize_jobs(raw)          # Liste[Job]
-
-        blocks = format_jobs_blocks(jobs)
+        location, search = _split_text(text)
+        rows = fetch_jobs_from_db(search=search, location=location, limit=10)
+        blocks = format_jobs_blocks(rows)
         respond(blocks=blocks)
-
     except Exception as e:
         logger.exception("Fehler im /jobs Handler")
         respond(text=f"Fehler beim Laden der Jobs: {e}")
 
-# ------------------------------------------------------------
-# Routen
-# ------------------------------------------------------------
-
+# -------------------------------------------------------------------
+# HTTP-Routen (Slack & Health)
+# -------------------------------------------------------------------
 @flask_app.get("/health")
 def health():
     return jsonify({"ok": True})
+
+# Beide Routen unterstützen (je nach Slack-Konfiguration)
+@flask_app.post("/slack/events")
+def slack_events():
+    return handler.handle(request)
 
 @flask_app.post("/slack/commands")
 def slack_commands():
