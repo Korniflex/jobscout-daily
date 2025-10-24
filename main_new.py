@@ -1,6 +1,7 @@
 from core.orchestrator import load_params
 from core.normalizer import normalize_jobs
 from core.schema import Job, CommonQuery
+from core.db_conn import get_conn
 from adapters import get_params_remotive,fetch_remotive,get_params_agentur, fetch_agentur, get_params_arbeitnow, fetch_arbeitnow ,get_params_jobicy, fetch_jobicy
 
 from datetime import datetime
@@ -12,14 +13,8 @@ import hashlib
 from dotenv import load_dotenv
 load_dotenv()
 
-# PostgreSQL Verbindung:
-conn = psycopg2.connect(
-    dbname=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT")
-)
+# Neon Database Verbindung:
+conn = get_conn()
 cursor = conn.cursor()
 
 
