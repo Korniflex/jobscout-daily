@@ -1,10 +1,12 @@
 services:
-  - type: web
-    name: jobscout-backend
+  # --- BACKEND: CRON qui lance main_new.py ---
+  - type: cron
+    name: jobscout-backend-cron
     env: python
+    plan: free
+    schedule: "* 7 * * *"   # jeden Tag um 07:00 (bin mir nicht sicher welcher Uhrzeit. Server in Frankfurt also maybe Berlin?)
     buildCommand: pip install -r requirements_render.txt
     startCommand: python main_new.py
-    plan: free
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -13,7 +15,7 @@ services:
     name: jobscout-slackbot
     env: python
     buildCommand: pip install -r requirements_render.txt
-    startCommand: uvicorn slackbot_app:flask_app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn slackbot_app:asgi_app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         sync: false

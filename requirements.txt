@@ -27,3 +27,4 @@ slack-bot
 slack-sdk
 python-dotenv
 flask
+asgiref
