@@ -14,5 +14,7 @@ slack-bolt>=1.18.0
 slack-sdk>=3.23.0
 flask>=3.0.0
 uvicorn
+asgiref
+
 # --- Optional utilities ---
 python-dotenv>=1.0.0

@@ -20,6 +20,7 @@ from typing import List, Optional
 from flask import Flask, request, jsonify
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
+from asgiref.wsgi import WsgiToAsgi
 
 # Optional: .env laden (lokal hilfreich)
 try:
@@ -27,6 +28,9 @@ try:
     load_dotenv()
 except Exception:
     pass
+
+# --- ASGI-Wrapper für Flask, damit Uvicorn es starten kann ---
+
 
 # Eigene Module
 from core.db_conn import get_conn  # <- NEON Verbindung
@@ -44,6 +48,7 @@ bolt_app = App(
 
 # Flask App für HTTP Empfang
 flask_app = Flask(__name__)
+asgi_app = WsgiToAsgi(flask_app)
 handler = SlackRequestHandler(bolt_app)
 
 # -------------------------------------------------------------------
