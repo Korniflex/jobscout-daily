@@ -7,19 +7,6 @@ from core.schema import Job
 
 arbeitnow_url = 'https://www.arbeitnow.com/api/job-board-api'
 
-def _strip_parens(text):
-    """Entfernt alles in runden Klammern, überflüssige Leerzeichen
-    und ggf. Ortsangaben am Ende des Titels."""
-    if not text:
-        return text
-    # Entfernt Text in runden Klammern, z. B. "(m/w/d)"
-    text = re.sub(r"\s*\([^)]*\)", "", str(text))
-    # Entfernt doppelte Leerzeichen
-    text = re.sub(r"\s{2,}", " ", text)
-    # Entfernt "in [Ort]" am Ende des Titels (z. B. "Manager in Berlin" → "Manager")
-    text = re.sub(r"\s+in\s+[A-ZÄÖÜ][a-zäöüß\- ]+$", "", text)
-    return text.strip()
-
 def get_params_arbeitnow(search: str = "", 
             category: str = "", 
             company: str = "", 
@@ -61,7 +48,8 @@ def fetch_arbeitnow(params: dict) -> list[dict]:
         jobs = data.get("data") or data.get("jobs")
         print(f"  Arbeitnow_raw: {len(jobs)} jobs gefunden")
         if jobs:
-            return jobs
+            return jobs  # FIX: war vorher "return []"
+        return []
     except Exception as e:
         print("Error Arbeitnow:", e)
         return []
@@ -99,7 +87,7 @@ def normalize_arbeitnow(job: dict) -> Job:
     else:
         created_iso = created
 
-    #  ID: "arbeitnow:<id>"
+    # ID: "arbeitnow:<id>"
     job_id = job.get("id")
     if not job_id:
         slug_or_url = (job.get("slug") or job.get("url") or "").strip()
@@ -111,13 +99,10 @@ def normalize_arbeitnow(job: dict) -> Job:
     else:
         job_id = str(job_id).strip()
 
-           # Titel bereinigen (ohne Klammern, etc.)
-
-
     return {
         "id": f"arbeitnow:{job_id}",
         "source": "arbeitnow",
-        "title": "title",
+        "title": job.get("title"),
         "company": job.get("company_name"),
         "location": loc,
         "job_type": jt,

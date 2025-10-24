@@ -25,7 +25,7 @@ def main():
         work_mode=None,
         remote=None, 
         location=None,                         
-        limit=25,
+        limit=100,
     ) 
 
 
