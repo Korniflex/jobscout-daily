@@ -28,3 +28,4 @@ slack-sdk
 python-dotenv
 flask
 asgiref
+gunicorn
