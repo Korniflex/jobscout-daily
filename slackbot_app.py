@@ -12,6 +12,7 @@ Voraussetzungen:
       Slash Command: /jobs  ->  https://<host>/slack/events   (oder /slack/commands, beide Routen sind vorhanden)
 """
 
+
 import os, sys
 sys.path.append(os.path.dirname(__file__))
 import logging
