@@ -1,22 +1,35 @@
-import os, psycopg2
-from urllib.parse import urlparse
+# core/db_conn.py
+# ──────────────────────────────────────────────
+# Einheitliche Datenbankverbindung (PostgreSQL Neon)
+# ──────────────────────────────────────────────
+
+import os
+import psycopg2
+from psycopg2.pool import SimpleConnectionPool
+
+# Neon-Verbindungs-URL aus Env-Variable laden
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("Fehler: DATABASE_URL ist nicht gesetzt.")
+
+# Sicherstellen, dass sslmode=require gesetzt ist
+if "sslmode=" not in DATABASE_URL:
+    if "?" in DATABASE_URL:
+        DATABASE_URL += "&sslmode=require"
+    else:
+        DATABASE_URL += "?sslmode=require"
+
+# Einfacher Connection Pool (für Slackbot & Producer)
+POOL_MIN = int(os.environ.get("DB_POOL_MIN", "1"))
+POOL_MAX = int(os.environ.get("DB_POOL_MAX", "5"))
+pool = SimpleConnectionPool(POOL_MIN, POOL_MAX, dsn=DATABASE_URL)
 
 def get_conn():
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        u = urlparse(db_url)
-        return psycopg2.connect(
-            dbname=u.path.lstrip("/"),
-            user=u.username,
-            password=u.password,
-            host=u.hostname,
-            port=u.port,
-            sslmode="require"   # Wichtig für Neon
-        )
-    return psycopg2.connect(
-        dbname="JobScout",
-        user="postgres",
-        password="postgres",
-        host="localhost",
-        port="5433"
-    )
+    """Gibt eine DB-Verbindung aus dem Pool zurück."""
+    return pool.getconn()
+
+def put_conn(conn):
+    """Gibt eine DB-Verbindung zurück in den Pool."""
+    if conn:
+        pool.putconn(conn)
