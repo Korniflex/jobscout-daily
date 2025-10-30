@@ -71,6 +71,7 @@ def normalize_jobicy(job: dict) -> Job:
         "source": "jobicy",
         "title": clean_text(job.get("jobTitle", "")),   
         "job_type" : job.get("jobType"),
+        "remote": job.get("jobWorkType") or job.get("remote") or None,
         "company": job.get("companyName"),
         "location": job.get("jobGeo"),
         "url": job.get("url"),

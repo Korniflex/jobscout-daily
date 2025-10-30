@@ -56,60 +56,44 @@ def fetch_arbeitnow(params: dict) -> list[dict]:
 
 
 def normalize_arbeitnow(job: dict) -> Job:
-    # job_types ist oft eine liste
-    jtypes = job.get("job_types") or []
+    # job_types ist oft eine Liste, manchmal String
+    jtypes = job.get("job_types") or job.get("job_type") or []
     if isinstance(jtypes, str):
         jtypes = [jtypes]
     jt = ", ".join([s for s in jtypes if s]) or None
 
-    # remote = bool 
+    # remote kann bool, string oder über job_types kommen
     remote_flag = job.get("remote")
     remote_mode = None
     if isinstance(remote_flag, bool):
         remote_mode = "remote" if remote_flag else None
-    elif jt:
-        jt_lower = jt.lower()
-        if "remote" in jt_lower:
+    elif isinstance(remote_flag, str):
+        if remote_flag.strip().lower() in {"true", "yes", "1"}:
             remote_mode = "remote"
-        elif "hybrid" in jt_lower:
+    if not remote_mode and jt:
+        jl = jt.lower()
+        if "remote" in jl:
+            remote_mode = "remote"
+        elif "hybrid" in jl:
             remote_mode = "hybrid"
 
-    # fallback location
-    loc = job.get("candidate_required_location") or job.get("location") or None
-
-    # posted_at int timestamp oder ISO
-    created = job.get("created_at")
-    if isinstance(created, (int, float)):
-        try:
-            created_iso = datetime.fromtimestamp(created).isoformat()
-        except Exception:
-            created_iso = None
-    else:
-        created_iso = created
-
-    # ID: "arbeitnow:<id>"
-    job_id = job.get("id")
-    if not job_id:
-        slug_or_url = (job.get("slug") or job.get("url") or "").strip()
-        m = re.search(r"(\d+)(?:/?$)", slug_or_url) 
-        if m:
-            job_id = m.group(1)
-        else:
-            job_id = slug_or_url.rstrip("/").split("/")[-1] if slug_or_url else "unknown"
-    else:
-        job_id = str(job_id).strip()
-
     return {
-        "id": f"arbeitnow:{job_id}",
+        "id": f"arbeitnow:{job.get('id') or job.get('slug')}",
         "source": "arbeitnow",
         "title": job.get("title"),
         "company": job.get("company_name"),
-        "location": loc,
-        "job_type": jt,
-        "remote": remote_mode,
+        # Fallback-Kette für Ort
+        "location": job.get("location") or job.get("candidate_required_location"),
         "url": job.get("url"),
-        "posted_at": created_iso,
+        "posted_at": (
+            datetime.fromtimestamp(job["created_at"]).isoformat()
+            if isinstance(job.get("created_at"), (int, float))
+            else job.get("created_at")
+        ),
+        "job_type": jt,            # <- jetzt gesetzt
+        "remote": remote_mode,     # <- jetzt gesetzt (wird zu work_mode in DB)
     }
+
 
 def normalize_arbeitnow_list(rows: list[dict]) -> list[Job]:
     return [normalize_arbeitnow(j) for j in rows]

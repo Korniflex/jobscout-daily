@@ -71,7 +71,7 @@ def normalize_remotive(job: dict) -> Job:
         "company": job.get("company_name"),
         "location": loc,
         "job_type": jt,
-        "remote": remote_mode,
+        "remote": "remote",
         "url": job.get("url"),
         "posted_at": job.get("publication_date"),
     }
