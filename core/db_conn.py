@@ -1,18 +1,20 @@
-import os, psycopg2
-from urllib.parse import urlparse
+# Kommentare im Code auf Deutsch
+import os
+import psycopg2
 
 def get_conn():
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        u = urlparse(db_url)
+    # 1) Bevorzugt: vollständige DSN-URL aus der Umgebung (Neon "pooled")
+    dsn = os.getenv("DATABASE_URL")
+    if dsn:
+        # WICHTIG: DSN unverändert an psycopg2 übergeben.
+        # Keine eigene Zerlegung per urlparse, damit keine Query-Parameter verloren gehen.
         return psycopg2.connect(
-            dbname=u.path.lstrip("/"),
-            user=u.username,
-            password=u.password,
-            host=u.hostname,
-            port=u.port,
-            sslmode="require"   # Wichtig für Neon
+            dsn,
+            connect_timeout=10,
+            application_name="jobscout-slackbot"
         )
+
+    # 2) Fallback: lokale Dev-DB
     return psycopg2.connect(
         dbname="JobScout",
         user="postgres",
