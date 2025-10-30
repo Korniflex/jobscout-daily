@@ -32,8 +32,8 @@ def upsert_jobs(jobs: list[Job]):
         print(f"[DB] inserting : {job.title} | {job.company}, {job.source}")
         try:
             cursor.execute("""
-                INSERT INTO jobs (source, title, company, location, job_type, posted_at, url, hash_value)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO jobs (source, title, company, location, job_type, work_mode, posted_at, url, hash_value)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s, %s)
                 ON CONFLICT (hash_value) DO NOTHING
             """, (                                 # ON CONFLICT DO NOTHING => wenn dieser Wert schon existiert -> nicht doppelt einfügen. Wir nutzen DO NOTHING, weil wir doppelte Jobs nicht mehrfach speichern wollen. Also einmal in die DB -> später, wenn der gleiche Job nochmal auftaucht, wird er übersprungen.
                 job.source or "",
