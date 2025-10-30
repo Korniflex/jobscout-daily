@@ -29,7 +29,7 @@ def upsert_jobs(jobs: list[Job]):
         # baut einen eindeutigen String aus Jobtitel, Firma, Ort, Source, ID und Arbeitsmodus
         raw_str = f"{job.title}-{job.company}-{job.location}-{job.source}-{job.id}-{job.job_type}-{job.remote}-{job.source}"
         hash_value = hashlib.sha256(raw_str.encode("utf-8")).hexdigest()    # erzeugt daraus einen Fingerabdruck (Hash), also eine eindeutige ID
-        print(f"[DB] inserting : {job.title} | {job.company}")
+        print(f"[DB] inserting : {job.title} | {job.company}, {job.source}")
         try:
             cursor.execute("""
                 INSERT INTO jobs (source, title, company, location, job_type, posted_at, url, hash_value)
