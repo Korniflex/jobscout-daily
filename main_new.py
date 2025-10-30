@@ -27,9 +27,9 @@ def upsert_jobs(jobs: list[Job]):
     """
     for job in jobs:
         # baut einen eindeutigen String aus Jobtitel, Firma, Ort, Source, ID und Arbeitsmodus
-        raw_str = f"{job.title}-{job.company}-{job.location}-{job.source}-{job.id}-{job.job_type}-{job.source}"
+        raw_str = f"{job.title}-{job.company}-{job.location}-{job.source}-{job.id}-{job.job_type}-{job.remote}-{job.source}"
         hash_value = hashlib.sha256(raw_str.encode("utf-8")).hexdigest()    # erzeugt daraus einen Fingerabdruck (Hash), also eine eindeutige ID
-        print(f"[DB] inserting : {job.title} | {job.company}")
+        print(f"[DB] inserting : {job.title} | {job.company}, {job.source}")
         try:
             cursor.execute("""
                 INSERT INTO jobs (source, title, company, location, job_type, posted_at, url, hash_value)
@@ -41,6 +41,7 @@ def upsert_jobs(jobs: list[Job]):
                 job.company or "",
                 job.location or "",
                 job.job_type or "",
+                job.remote or "",
                 job.posted_at or None,
                 str(job.url) if job.url else "",  # <- hier wandeln wir HttpUrl in String um. Denn Pydantic verwendet für URLs häufig den Typ HttpUrl. PostgreSQL über psycopg2 kann HttpUrl nicht automatisch in TEXT konvertieren. Das bedeutet: psycopg2 weiß nicht, wie es ein HttpUrl-Objekt in die Datenbank schreiben soll
                 hash_value
@@ -54,6 +55,8 @@ def upsert_jobs(jobs: list[Job]):
             # Wenn beim INSERT ein Fehler passiert (zB doppelter Schlüssel, falscher Datentyp), bricht PostgreSQL die aktuelle Transaktion ab
             # rollback setzt nur die fehlerhafte Transaktion zurück. Danach kann das Skript weiterlaufen und die nächsten Jobs einfügen!
 
+
+# Macht dieser TEIL ueberhaupt Sinn?
 IT_SYNONYMS = [
     "IT", "Informatik", "Software", "Softwareentwicklung", "Tech", "Technology",
     "Software & IT", "Computer Science", "Entwicklung", "Developer", "Engineering"
@@ -85,20 +88,6 @@ def main():
     # DB Upsert:
     upsert_jobs(all_normalized)
 
-########################################################################################
-#Temporäres Excel File
-    print(f"Gesamt normalisierte Jobs: {len(all_normalized)}")
-    for j in all_normalized[:5]:
-        print(j.title, "|", j.company, "|", j.location, "|", j.remote, "|",  j.url)
-    
-    
-    os.makedirs("exports", exist_ok=True)  # Herstellt file falls nötig
-
-    out_file = f"exports/{datetime.now().strftime('%Y%m%d')}_Jobs_sammlung.xlsx"
-    pd.DataFrame([j.model_dump() for j in all_normalized]).to_excel(out_file, index=False)
-    print("Exportiert nach:", out_file)
-
-##############################################################################################
 if __name__ == "__main__":
     main()
     cursor.close()
