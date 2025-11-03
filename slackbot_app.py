@@ -145,6 +145,8 @@ def format_jobs_blocks(rows: list[tuple]) -> List[dict]:
 # -------------------------------------------------------------------
 # Slash Command: /jobs
 # -------------------------------------------------------------------
+import threading
+
 @bolt_app.command("/jobs")
 def cmd_jobs(ack, respond, command):
     """
@@ -154,16 +156,21 @@ def cmd_jobs(ack, respond, command):
       /jobs analyst
       /jobs berlin
     """
-    try:
-        ack()  # schnelle Bestätigung < 3s
-        text = command.get("text") or ""
-        location, search = _split_text(text)
-        rows = fetch_jobs_from_db(search=search, location=location, limit=10)
-        blocks = format_jobs_blocks(rows)
-        respond(blocks=blocks)
-    except Exception as e:
-        logger.exception("Fehler im /jobs Handler")
-        respond(text=f"Fehler beim Laden der Jobs: {e}")
+    text = command.get("text") or ""
+    ack()  # sendet die Pflicht-Bestätigung sofort an Slack
+    respond(text=f"Suche Jobs für: *{text}* – bitte kurz warten...")    # sendet eine Zwischenmeldung
+
+    def run_search():
+        try:
+            location, search = _split_text(text)
+            rows = fetch_jobs_from_db(search=search, location=location, limit=10)
+            blocks = format_jobs_blocks(rows)
+            respond(blocks=blocks)
+        except Exception as e:
+            logger.exception("Fehler im /jobs Handler")
+            respond(text=f"Fehler beim Laden der Jobs: {e}")
+
+    threading.Thread(target=run_search).start() # führt die eigentliche Arbeit im Hintergrund aus
 
 # -------------------------------------------------------------------
 # HTTP-Routen (Slack & Health)
