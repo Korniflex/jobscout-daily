@@ -15,6 +15,7 @@ Voraussetzungen:
 
 import os, sys
 import json
+import re
 sys.path.append(os.path.dirname(__file__))
 import logging
 from typing import List, Optional
@@ -59,14 +60,49 @@ handler = SlackRequestHandler(bolt_app)
 
 def _split_text(text: str) -> tuple[Optional[str], Optional[str]]:
     """
-    Einfache Heuristik:
-      - 2+ Wörter: erstes = location, rest = search
-      - 1 Wort   : search
-      - sonst    : nichts
+    Parse Slash Command Text mit Support für Quotes.
+    
+    Unterstützte Formate:
+      /jobs "data analyst"           -> location=None, search="data analyst"
+      /jobs berlin "data analyst"    -> location="berlin", search="data analyst"
+      /jobs "data analyst" berlin    -> location="berlin", search="data analyst"
+      /jobs berlin analyst           -> location="berlin", search="analyst"
+      /jobs analyst                  -> location=None, search="analyst"
+    
+    Returns:
+      (location, search)
     """
-    parts = (text or "").strip().split()
-    if not parts:
+    text = (text or "").strip()
+    if not text:
         return None, None
+    
+    # Suche nach Text in Quotes (sowohl " als auch ')
+    quote_pattern = r'["\']([^"\']+)["\']'
+    quote_match = re.search(quote_pattern, text)
+    
+    if quote_match:
+        # Text in Quotes ist der Suchbegriff
+        search = quote_match.group(1).strip()
+        
+        # Rest (ohne Quotes) ist der Standort
+        location_text = re.sub(quote_pattern, '', text).strip()
+        location = location_text if location_text else None
+        
+        logger.info(f"Parsed with quotes: location='{location}', search='{search}'")
+        return location, search
+    
+    # Keine Quotes: alte Logik
+    parts = text.split()
+    if len(parts) == 1:
+        logger.info(f"Parsed single word: location=None, search='{parts[0]}'")
+        return None, parts[0]
+    
+    # 2+ Wörter: erstes = location, rest = search
+    location = parts[0]
+    search = " ".join(parts[1:])
+    logger.info(f"Parsed multiple words: location='{location}', search='{search}'")
+    return location, search
+
     if len(parts) == 1:
         return None, parts[0]
     return parts[0], " ".join(parts[1:])
@@ -121,9 +157,14 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: in
     conn.close()
     return rows
 
-def format_jobs_blocks(rows: list[tuple], search: str = None, location: str =None, offset: int = 0) -> List[dict]:
+def format_jobs_blocks(rows: list[tuple], search_term: str = None, location_filter : str =None, offset: int = 0) -> List[dict]:
     """
-    Slack Blocks kompakt. rows: (source,title,company,location,job_type,posted_at,url)
+    Slack Blocks kompakt. 
+    rows: (source,title,company,location,job_type,posted_at,url)
+
+    Renamed parameters to avoid confusion:
+      - search_term: the search query
+      - location_filter: the location filter
     """
     blocks: List[dict] = []
     if not rows:
@@ -136,12 +177,12 @@ def format_jobs_blocks(rows: list[tuple], search: str = None, location: str =Non
 
     #Jobs anzeigen
     for r in rows[:10]:
-        source, title, company, location, job_type, posted_at, url = r
+        source, title, company, job_location, job_type, posted_at, url = r
         title = title or "(ohne Titel)"
         company = company or "(ohne Firma)"
-        location = location or "(ohne Ort)"
+        job_location = job_location or "(ohne Ort)"
         mode = job_type or ""
-        line = f"*{title}*  bei *{company}*  {f'[{mode}]' if mode else ''}\n{location}  ·  Quelle: {source}"
+        line = f"*{title}*  bei *{company}*  {f'[{mode}]' if mode else ''}\n{job_location}  ·  Quelle: {source}"
         if url:
             line += f"\n<{url}|Zur Stelle>"
 
@@ -150,8 +191,8 @@ def format_jobs_blocks(rows: list[tuple], search: str = None, location: str =Non
 
 
     button_value = json.dumps({
-            "search": search or "",
-            "location": location or "",
+            "search": search_term or "",
+            "location": location_filter or "",
             "offset": offset + 10
         })
 
@@ -184,8 +225,12 @@ def cmd_jobs(ack, respond, command):
     try:
         ack() # schnelle Bestätigung < 3s
         text = command.get("text") or ""
+        logger.info(f"User Suchkriterie : /jobs {text}")
+
         location, search = _split_text(text)
-        rows = fetch_jobs_from_db(search=search, location=location, limit=10)
+        logger.info(f"Konvertierte User Eingabe: location = '{location}', search= '{search}'")
+
+        rows = fetch_jobs_from_db(search_term=search, location_filter =location, limit=10)
         blocks = format_jobs_blocks(rows)
         respond(blocks=blocks)  
     except Exception as e:
@@ -212,6 +257,8 @@ def handle_show_more(ack, body, respond):
         location = button_value.get("location") or None
         offset = button_value.get("offset", 10)
 
+        logger.info(f"Mehr anzeigen: search='{search}', location='{location}', offset={offset}")
+
         #Laden von weiteren Jobs
         rows = fetch_jobs_from_db(search= search, location= location, limit=10, offset= offset)
 
@@ -223,7 +270,7 @@ def handle_show_more(ack, body, respond):
             return
         
         #Erstellt neue Blocks
-        blocks= format_jobs_blocks(rows, search= search, location= location, offset= offset)
+        blocks= format_jobs_blocks(rows, search_term= search, location_filter= location, offset= offset)
 
         #Fuege neue Jobs hinxu (nicht ersetzen)
         respond(
