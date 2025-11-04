@@ -116,6 +116,9 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: in
     """
     conn = get_conn()
     cur = conn.cursor()
+
+    logger.info(f"DB Query: search='{search}', location='{location}', limit={limit}, offset={offset}")
+
     if search and location:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
@@ -155,6 +158,8 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: in
     rows = cur.fetchall()
     cur.close()
     conn.close()
+
+    logger.info(f"DB returned {len(rows)} rows")
     return rows
 
 def format_jobs_blocks(rows: list[tuple], search_term: str = None, location_filter : str =None, offset: int = 0) -> List[dict]:
@@ -189,7 +194,7 @@ def format_jobs_blocks(rows: list[tuple], search_term: str = None, location_filt
         blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": line}})
         blocks.append({"type": "divider"})
 
-
+    # Button nur einmal am Ende hinzufügen
     button_value = json.dumps({
             "search": search_term or "",
             "location": location_filter or "",
@@ -230,8 +235,8 @@ def cmd_jobs(ack, respond, command):
         location, search = _split_text(text)
         logger.info(f"Konvertierte User Eingabe: location = '{location}', search= '{search}'")
 
-        rows = fetch_jobs_from_db(search_term=search, location_filter =location, limit=10)
-        blocks = format_jobs_blocks(rows)
+        rows = fetch_jobs_from_db(search=search, location_filter =location, limit=10)
+        blocks = format_jobs_blocks(rows, search_term=search, location_filter=location, offset=0)
         respond(blocks=blocks)  
     except Exception as e:
         logger.exception("Fehler im /jobs Handler")
