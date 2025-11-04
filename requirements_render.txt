@@ -16,7 +16,7 @@ flask>=3.0.0
 uvicorn
 asgiref
 gunicorn
-json
+
 
 # --- Optional utilities ---
 python-dotenv>=1.0.0

@@ -29,4 +29,3 @@ python-dotenv
 flask
 asgiref
 gunicorn
-json
