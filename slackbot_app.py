@@ -147,7 +147,7 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], work_mode
             ORDER BY id DESC
             LIMIT %s
             OFFSET %s         
-        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{location}%", limit, offset))
+        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{location}%", f"%{work_mode}%", limit, offset))
     elif search and work_mode:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
@@ -157,7 +157,7 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], work_mode
             ORDER BY id DESC
             LIMIT %s
             OFFSET %s         
-        """, (f"%{search}%", f"%{search}%", f"%{search}%", limit, offset))
+        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{work_mode}%", limit, offset))
     elif work_mode:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
@@ -166,7 +166,7 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], work_mode
             ORDER BY id DESC
             LIMIT %s
             OFFSET %s        
-        """, (f"%{location}%", limit, offset))
+        """, (f"%{work_mode}%", limit, offset))
     else:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
