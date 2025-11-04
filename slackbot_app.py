@@ -136,51 +136,43 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], work_mode
     cur = conn.cursor()
 
     logger.info(f"DB Query: search='{search}', location='{location}', limit={limit}, offset={offset}")
+    where = []
+    params = []
 
-    if search and location and work_mode:
-        cur.execute("""
-            SELECT source,title,company,location,job_type,posted_at,url
-            FROM jobs
-            WHERE (title ILIKE %s OR company ILIKE %s OR location ILIKE %s)
-              AND (location ILIKE %s)
-              AND job_type ILIKE %s      
-            ORDER BY id DESC
-            LIMIT %s
-            OFFSET %s         
-        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{location}%", f"%{work_mode}%", limit, offset))
-    elif search and work_mode:
-        cur.execute("""
-            SELECT source,title,company,location,job_type,posted_at,url
-            FROM jobs
-            WHERE (title ILIKE %s OR company ILIKE %s OR location ILIKE %s)
-                AND job_type ILIKE %s
-            ORDER BY id DESC
-            LIMIT %s
-            OFFSET %s         
-        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{work_mode}%", limit, offset))
-    elif work_mode:
-        cur.execute("""
-            SELECT source,title,company,location,job_type,posted_at,url
-            FROM jobs
-            WHERE job_type ILIKE %s
-            ORDER BY id DESC
-            LIMIT %s
-            OFFSET %s        
-        """, (f"%{work_mode}%", limit, offset))
-    else:
-        cur.execute("""
-            SELECT source,title,company,location,job_type,posted_at,url
-            FROM jobs
-            ORDER BY id DESC
-            LIMIT %s
-            OFFSET %s        
-        """, (limit, offset))
+    if search:
+        where.append("(title ILIKE %s OR company ILIKE %s OR location ILIKE %s)")
+        like = f"%{search}%"
+        params.extend([like, like, like])
+
+    if location:
+        where.append("location ILIKE %s")
+        params.append(f"%{location}%")
+
+    if work_mode:
+        # Falls job_type oft NULL ist, auch in Textfeldern suchen:
+        where.append("(job_type ILIKE %s OR title ILIKE %s OR location ILIKE %s)")
+        mode_like = f"%{work_mode}%"
+        params.extend([mode_like, mode_like, mode_like])
+
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+
+    sql = f"""
+        SELECT source, title, company, location, job_type, posted_at, url
+        FROM jobs
+        {where_sql}
+        ORDER BY id DESC
+        LIMIT %s OFFSET %s
+    """
+    params.extend([limit, offset])
+
+    cur.execute(sql, params)
     rows = cur.fetchall()
     cur.close()
     conn.close()
 
     logger.info(f"DB returned {len(rows)} rows")
     return rows
+
 
 def format_jobs_blocks(rows: list[tuple], search_term: str = None, location_filter : str =None, offset: int = 0) -> List[dict]:
     """
