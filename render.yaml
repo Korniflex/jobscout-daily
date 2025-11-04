@@ -1,12 +1,12 @@
 services:
-  # --- BACKEND: CRON qui lance main_new.py ---
   - type: cron
     name: jobscout-backend-cron
     env: python
     plan: free
-    schedule: "* 7 * * *"   # jeden Tag um 07:00 (bin mir nicht sicher welcher Uhrzeit. Server in Frankfurt also maybe Berlin?)
+    # 06:00 UTC ≈ 07:00 Berlin in winter; in summer it will be 08:00 Berlin
+    schedule: "0 6 * * *"
     buildCommand: pip install -r requirements_render.txt
-    startCommand: python main_new.py
+    command: python main_new.py
     envVars:
       - key: DATABASE_URL
         sync: false
