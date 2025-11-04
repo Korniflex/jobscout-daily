@@ -242,7 +242,24 @@ def cmd_jobs(ack, respond, command):
         logger.exception("Fehler im /jobs Handler")
         respond(text=f"Fehler beim Laden der Jobs: {e}")
 
+# -------------------------------------------------------------------
+# Slash Command: /jobscount
+# -------------------------------------------------------------------
+@bolt_app.command("/jobscount")
 
+def cmd_jobscount(ack, respond):
+    try:
+        ack()
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM jobs;")
+        count = cur.fetchone()[0]
+        cur.close()
+        conn.close()
+        respond(text=f"Es sind aktuell {count} Jobs in der Datenbank.")
+    except Exception as e:
+        logger.exception("Fehler im /jobscount")
+        respond(text=f"Fehler beim Laden der Jobs: {e}")
 
 #-------------------------------------------------------------------
 # Button Befehl (mehr anzeigen)
