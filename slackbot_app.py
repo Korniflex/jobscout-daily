@@ -235,7 +235,7 @@ def cmd_jobs(ack, respond, command):
         location, search = _split_text(text)
         logger.info(f"Konvertierte User Eingabe: location = '{location}', search= '{search}'")
 
-        rows = fetch_jobs_from_db(search=search, location_filter =location, limit=10)
+        rows = fetch_jobs_from_db(search=search, location=location, limit=10)
         blocks = format_jobs_blocks(rows, search_term=search, location_filter=location, offset=0)
         respond(blocks=blocks)  
     except Exception as e:
