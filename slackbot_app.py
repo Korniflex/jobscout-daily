@@ -14,6 +14,7 @@ Voraussetzungen:
 
 
 import os, sys
+import json
 sys.path.append(os.path.dirname(__file__))
 import logging
 from typing import List, Optional
@@ -70,7 +71,7 @@ def _split_text(text: str) -> tuple[Optional[str], Optional[str]]:
         return None, parts[0]
     return parts[0], " ".join(parts[1:])
 
-def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: int = 10) -> list[tuple]:
+def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: int = 10, offset: int = 0) -> list[tuple]:
     """
     Liest die letzten Jobs aus Neon.
     Filter:
@@ -87,7 +88,7 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: in
               AND (location ILIKE %s)
             ORDER BY id DESC
             LIMIT %s
-        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{location}%", limit))
+        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{location}%", limit, offset))
     elif search:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
@@ -95,7 +96,7 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: in
             WHERE title ILIKE %s OR company ILIKE %s OR location ILIKE %s
             ORDER BY id DESC
             LIMIT %s
-        """, (f"%{search}%", f"%{search}%", f"%{search}%", limit))
+        """, (f"%{search}%", f"%{search}%", f"%{search}%", limit, offset))
     elif location:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
@@ -103,20 +104,20 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: in
             WHERE location ILIKE %s
             ORDER BY id DESC
             LIMIT %s
-        """, (f"%{location}%", limit))
+        """, (f"%{location}%", limit, offset))
     else:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
             FROM jobs
             ORDER BY id DESC
             LIMIT %s
-        """, (limit,))
+        """, (limit, offset))
     rows = cur.fetchall()
     cur.close()
     conn.close()
     return rows
 
-def format_jobs_blocks(rows: list[tuple]) -> List[dict]:
+def format_jobs_blocks(rows: list[tuple], search: str = None, location: str =None, offset: int = 0) -> List[dict]:
     """
     Slack Blocks kompakt. rows: (source,title,company,location,job_type,posted_at,url)
     """
@@ -125,9 +126,11 @@ def format_jobs_blocks(rows: list[tuple]) -> List[dict]:
         blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": "Keine Ergebnisse gefunden."}})
         return blocks
 
+    # Header
     blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": f"*{len(rows)} Treffer gefunden*  (zeige bis zu 10)"}})
     blocks.append({"type": "divider"})
 
+    #Jobs anzeigen
     for r in rows[:10]:
         source, title, company, location, job_type, posted_at, url = r
         title = title or "(ohne Titel)"
@@ -140,6 +143,26 @@ def format_jobs_blocks(rows: list[tuple]) -> List[dict]:
 
         blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": line}})
         blocks.append({"type": "divider"})
+
+
+        button_value = json.dumps({
+            "search": search or "",
+            "location": location or "",
+            "offset": offset + 10
+        })
+
+        blocks.append({
+            "type": "actions",
+            "elements": [
+                {
+
+                    "type":"button",
+                    "text": {"type": "plain_text", "text": "Mehr anzeigen"},
+                    "action_id": "show_more_jobs",
+                    "value": button_value
+                }
+            ]
+        })
     return blocks
 
 # -------------------------------------------------------------------
@@ -164,6 +187,55 @@ def cmd_jobs(ack, respond, command):
     except Exception as e:
         logger.exception("Fehler im /jobs Handler")
         respond(text=f"Fehler beim Laden der Jobs: {e}")
+
+
+
+#-------------------------------------------------------------------
+# Button Befehl (mehr anzeigen)
+#-------------------------------------------------------------------
+@bolt_app.action("show_more_jobs")
+def handle_show_more(ack, body, respond):
+    """
+    Handler fuer den Show More Button
+    """
+
+    try:
+        ack()
+
+        #parse vutton value
+        button_value= json.loads(body["actions"][0]["value"])
+        search = button_value.get("search") or None
+        location = button_value.get("location") or None
+        offset = button_value.get("offset", 10)
+
+        #Laden von weiteren Jobs
+        rows = fetch_jobs_from_db(search= search, location= location, limit=10, offset= offset)
+
+        if not rows:
+            respond(
+                text= "Keine weiteren Jobs gefunden.",
+                replace_original = False
+            )
+            return
+        
+        #Erstellt neue Blocks
+        blocks= format_jobs_blocks(rows, search= search, location= location, offset= offset)
+
+        #Fuege neue Jobs hinxu (nicht ersetzen)
+        respond(
+            blocks=blocks,
+            replace_original= False
+        )
+
+    except Exception as e:
+        logger.exception("fehler im Mehr anzeigen Handler")
+        respond(
+            text="Fehler beim Laden weiterer Jobs: {e}"
+        )
+
+
+
+
 
 # -------------------------------------------------------------------
 # HTTP-Routen (Slack & Health)
