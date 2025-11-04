@@ -58,56 +58,74 @@ handler = SlackRequestHandler(bolt_app)
 # Hilfsfunktionen: Query-Parsing & DB-Lesen
 # -------------------------------------------------------------------
 
-def _split_text(text: str) -> tuple[Optional[str], Optional[str]]:
+def _split_text(text: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """
-    Parse Slash Command Text mit Support für Quotes.
-    
+    Parse Slash Command Text mit Support für Quotes und mode: Filter.
+
     Unterstützte Formate:
-      /jobs "data analyst"           -> location=None, search="data analyst"
-      /jobs berlin "data analyst"    -> location="berlin", search="data analyst"
-      /jobs "data analyst" berlin    -> location="berlin", search="data analyst"
-      /jobs berlin analyst           -> location="berlin", search="analyst"
-      /jobs analyst                  -> location=None, search="analyst"
-    
+      /jobs "data analyst"
+      /jobs berlin "data analyst"
+      /jobs "data analyst" berlin
+      /jobs berlin analyst
+      /jobs analyst
+      /jobs berlin analyst mode:remote
+      /jobs mode:hybrid
+      /jobs "developer" mode:onsite
+
     Returns:
-      (location, search)
+      (location, search, work_mode)
     """
     text = (text or "").strip()
     if not text:
-        return None, None
-    
-    # Suche nach Text in Quotes (sowohl " als auch ')
+        return None, None, None
+
+    # -------------------------------------------------------------
+    # 1. Extrahiere work_mode (z. B. mode:remote / mode:hybrid)
+    # -------------------------------------------------------------
+    work_mode = None
+    mode_match = re.search(r"mode:([a-zA-Z0-9_-]+)", text)
+    if mode_match:
+        work_mode = mode_match.group(1).strip()
+        # Entferne den mode-Teil aus dem Text für die weitere Analyse
+        text = re.sub(r"mode:[a-zA-Z0-9_-]+", "", text).strip()
+
+    # -------------------------------------------------------------
+    # 2. Quotes erkennen (für Suchbegriffe mit Leerzeichen)
+    # -------------------------------------------------------------
     quote_pattern = r'["\']([^"\']+)["\']'
     quote_match = re.search(quote_pattern, text)
-    
+
     if quote_match:
         # Text in Quotes ist der Suchbegriff
         search = quote_match.group(1).strip()
-        
+
         # Rest (ohne Quotes) ist der Standort
         location_text = re.sub(quote_pattern, '', text).strip()
         location = location_text if location_text else None
-        
-        logger.info(f"Parsed with quotes: location='{location}', search='{search}'")
-        return location, search
-    
-    # Keine Quotes: alte Logik
+
+        logger.info(f"Parsed with quotes: location='{location}', search='{search}', mode='{work_mode}'")
+        return location, search, work_mode
+
+    # -------------------------------------------------------------
+    # 3. Keine Quotes -> einfache Wortlogik
+    # -------------------------------------------------------------
     parts = text.split()
+    if not parts:
+        return None, None, work_mode
+
     if len(parts) == 1:
-        logger.info(f"Parsed single word: location=None, search='{parts[0]}'")
-        return None, parts[0]
-    
-    # 2+ Wörter: erstes = location, rest = search
+        # Nur ein Wort: könnte Suche oder Standort sein
+        logger.info(f"Parsed single word: location=None, search='{parts[0]}', mode='{work_mode}'")
+        return None, parts[0], work_mode
+
+    # 2+ Wörter: erstes = location, Rest = search
     location = parts[0]
     search = " ".join(parts[1:])
-    logger.info(f"Parsed multiple words: location='{location}', search='{search}'")
-    return location, search
+    logger.info(f"Parsed multiple words: location='{location}', search='{search}', mode='{work_mode}'")
+    return location, search, work_mode
 
-    if len(parts) == 1:
-        return None, parts[0]
-    return parts[0], " ".join(parts[1:])
 
-def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: int = 10, offset: int = 0) -> list[tuple]:
+def fetch_jobs_from_db(search: Optional[str], location: Optional[str], work_mode: Optional[str] = None, limit: int = 10, offset: int = 0) -> list[tuple]:
     """
     Liest die letzten Jobs aus Neon.
     Filter:
@@ -119,30 +137,32 @@ def fetch_jobs_from_db(search: Optional[str], location: Optional[str], limit: in
 
     logger.info(f"DB Query: search='{search}', location='{location}', limit={limit}, offset={offset}")
 
-    if search and location:
+    if search and location and work_mode:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
             FROM jobs
             WHERE (title ILIKE %s OR company ILIKE %s OR location ILIKE %s)
               AND (location ILIKE %s)
+              AND job_type ILIKE %s      
             ORDER BY id DESC
             LIMIT %s
             OFFSET %s         
         """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{location}%", limit, offset))
-    elif search:
+    elif search and work_mode:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
             FROM jobs
-            WHERE title ILIKE %s OR company ILIKE %s OR location ILIKE %s
+            WHERE (title ILIKE %s OR company ILIKE %s OR location ILIKE %s)
+                AND job_type ILIKE %s
             ORDER BY id DESC
             LIMIT %s
             OFFSET %s         
         """, (f"%{search}%", f"%{search}%", f"%{search}%", limit, offset))
-    elif location:
+    elif work_mode:
         cur.execute("""
             SELECT source,title,company,location,job_type,posted_at,url
             FROM jobs
-            WHERE location ILIKE %s
+            WHERE job_type ILIKE %s
             ORDER BY id DESC
             LIMIT %s
             OFFSET %s        
@@ -232,10 +252,10 @@ def cmd_jobs(ack, respond, command):
         text = command.get("text") or ""
         logger.info(f"User Suchkriterie : /jobs {text}")
 
-        location, search = _split_text(text)
-        logger.info(f"Konvertierte User Eingabe: location = '{location}', search= '{search}'")
+        location, search, work_mode = _split_text(text)
+        logger.info(f"Konvertierte User Eingabe: location = '{location}', search= '{search}', workode={work_mode}")
 
-        rows = fetch_jobs_from_db(search=search, location=location, limit=10)
+        rows = fetch_jobs_from_db(search=search, location=location, work_mode= work_mode, limit=10)
         blocks = format_jobs_blocks(rows, search_term=search, location_filter=location, offset=0)
         respond(blocks=blocks)  
     except Exception as e:
