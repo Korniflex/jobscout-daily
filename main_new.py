@@ -88,8 +88,39 @@ def main():
     # DB Upsert:
     upsert_jobs(all_normalized)
 
-if __name__ == "__main__":
-    main()
-    cursor.close()
-    conn.close()
+# --- Run logging for the daily cron ---
+def _log_run_start(cur, conn) -> int:
+    cur.execute("INSERT INTO ingestion_runs (rows_total, rows_inserted) VALUES (0,0) RETURNING id;")
+    run_id = cur.fetchone()[0]
+    conn.commit()
+    return run_id
 
+def _log_run_end(cur, conn, run_id: int, rows_total: int, rows_inserted: int, error: str | None):
+    cur.execute(
+        "UPDATE ingestion_runs SET finished_at=now(), rows_total=%s, rows_inserted=%s, error=%s WHERE id=%s;",
+        (rows_total, rows_inserted, error, run_id)
+    )
+    conn.commit()
+
+if __name__ == "__main__":
+    conn = get_conn()
+    cur = conn.cursor()
+    run_id = _log_run_start(cur, conn)
+
+    try:
+        # your current job-fetching logic
+        all_raws = load_params(CommonQuery())
+        all_normalized = normalize_jobs(all_raws)
+
+        print(f"Total normalized jobs: {len(all_normalized)}")
+        for j in all_normalized[:5]:
+            print(j.title, "-", j.company, "-", j.url, f"({j.source})")
+
+        rows_inserted = upsert_jobs(all_normalized)
+        _log_run_end(cur, conn, run_id, len(all_normalized), rows_inserted or 0, None)
+    except Exception as e:
+        _log_run_end(cur, conn, run_id, 0, 0, str(e))
+        raise
+    finally:
+        cur.close()
+        conn.close()
