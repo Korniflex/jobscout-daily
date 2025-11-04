@@ -89,18 +89,26 @@ def main():
     upsert_jobs(all_normalized)
 
 # --- Run logging for the daily cron ---
-def _log_run_start(cur, conn) -> int:
-    cur.execute("INSERT INTO ingestion_runs (rows_total, rows_inserted) VALUES (0,0) RETURNING id;")
-    run_id = cur.fetchone()[0]
-    conn.commit()
-    return run_id
+import os
+USE_RUN_TABLE = os.getenv("USE_RUN_TABLE") == "1"
 
-def _log_run_end(cur, conn, run_id: int, rows_total: int, rows_inserted: int, error: str | None):
+def _log_run_start(cur, conn):
+    if not USE_RUN_TABLE:
+        return None
+    cur.execute("INSERT INTO ingestion_runs (rows_total, rows_inserted) VALUES (0,0) RETURNING id;")
+    rid = cur.fetchone()[0]
+    conn.commit()
+    return rid
+
+def _log_run_end(cur, conn, run_id, rows_total, rows_inserted, error):
+    if not USE_RUN_TABLE or run_id is None:
+        return
     cur.execute(
         "UPDATE ingestion_runs SET finished_at=now(), rows_total=%s, rows_inserted=%s, error=%s WHERE id=%s;",
         (rows_total, rows_inserted, error, run_id)
     )
     conn.commit()
+
 
 if __name__ == "__main__":
     conn = get_conn()

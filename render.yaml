@@ -1,15 +1,18 @@
 services:
-  - type: cron
-    name: jobscout-backend-cron
+  - type: web
+    name: jobscout-slackbot
     env: python
     plan: free
-    # 06:00 UTC ≈ 07:00 Berlin in winter; in summer it will be 08:00 Berlin
-    schedule: "0 6 * * *"
     buildCommand: pip install -r requirements_render.txt
-    command: python main_new.py
+    startCommand: uvicorn slackbot_app:asgi_app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: SLACK_SIGNING_SECRET
+        sync: false
+      - key: SLACK_BOT_TOKEN
+        sync: false
+
 
   - type: web
     name: jobscout-slackbot
