@@ -149,13 +149,13 @@ def format_jobs_blocks(rows: list[tuple], search: str = None, location: str =Non
         blocks.append({"type": "divider"})
 
 
-        button_value = json.dumps({
+    button_value = json.dumps({
             "search": search or "",
             "location": location or "",
             "offset": offset + 10
         })
 
-        blocks.append({
+    blocks.append({
             "type": "actions",
             "elements": [
                 {
