@@ -115,19 +115,19 @@ def normalize_job_types(cursor, conn):
     normalization_sql = """
         UPDATE public.jobs
         SET job_type = CASE
-            WHEN job_type IN ('Full-Time', 'full_time', 'Full-time', 'Full-time permanent') THEN 'Vollzeit'
-            WHEN job_type IN ('Half-Time', 'half_time', 'Part-Time', 'Part-time', 'part_time') THEN 'Teilzeit'
-            WHEN job_type LIKE '%Internship%' THEN 'Praktikum'
-            WHEN job_type = 'contract' THEN 'Vertrag'
-            WHEN job_type = 'freelance' THEN 'Freelancer'
-            WHEN job_type = 'Apprenticeship' THEN 'Ausbildung'
-            ELSE job_type
-        END
-        WHERE job_type IN (
-            'Full-Time', 'full_time', 'Full-time', 'Full-time permanent',
-            'Half-Time', 'half_time', 'Part-Time', 'Part-time', 'part_time',
-            'contract', 'freelance', 'Apprenticeship'
-        ) OR job_type LIKE '%Internship%';
+    WHEN job_type IN ('Full-Time', 'full_time', 'Full-time', 'Full-time permanent') THEN 'Vollzeit'
+    WHEN job_type IN ('Half-Time', 'half_time', 'Part-Time', 'Part-time', 'part_time' ) THEN 'Teilzeit'
+    WHEN job_type IN ('Full-time permanent, experienced') THEN 'Vollzeit unbefristet, erfahren'
+    WHEN job_type IN ('Full-time permanent, mid') THEN 'Vollzeit unbefristet, mittleres Erfahrungsniveau'
+    WHEN job_type IN ('Working student, berufseinstieg') THEN 'Werkstudent, Berufseinsteiger'
+    WHEN job_type = 'berufseinstieg' THEN 'Berufseinsteiger'
+    WHEN job_type LIKE '%Internship%' THEN 'Praktikum'
+    WHEN job_type IN ('contract', 'Contract') THEN 'Vertrag'
+    WHEN job_type = 'freelance' THEN 'Freelancer'
+    WHEN job_type = 'Apprenticeship' THEN 'Ausbildung'
+    WHEN job_type = 'Working student' THEN 'Werkstudent'
+    ELSE job_type
+    END;
     """
     
     try:
