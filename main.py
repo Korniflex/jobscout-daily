@@ -56,55 +56,6 @@ def upsert_jobs(jobs: list[Job], cursor, conn) -> int:
     
     return inserted_count
 
-# DB-Upsert Funktion - FIXED: Return inserted count
-def upsert_jobs(jobs: list[Job], cursor, conn) -> int:
-    """
-    Speichert normalisierte Jobs in PostgreSQL.
-    Returns: Anzahl der tatsächlich eingefügten Jobs
-    """
-    inserted_count = 0
-    
-    for job in jobs:
-        raw_str = f"{job.title}-{job.company}-{job.location}-{job.source}-{job.id}-{job.job_type}-{job.remote}"
-        hash_value = hashlib.sha256(raw_str.encode("utf-8")).hexdigest()
-        
-        print(f"[DB] Attempting insert: {job.title} | {job.company} ({job.source})")
-        
-        try:
-            cursor.execute("""
-                INSERT INTO jobs (source, title, company, location, job_type, work_mode, posted_at, url, hash_value)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (hash_value) DO NOTHING
-                RETURNING id
-            """, (
-                job.source or "",
-                job.title or "",
-                job.company or "",
-                job.location or "",
-                job.job_type or "",
-                job.remote or "",
-                job.posted_at or None,
-                str(job.url) if job.url else "",
-                hash_value
-            ))
-            
-            # Check if row was actually inserted
-            result = cursor.fetchone()
-            if result:
-                inserted_count += 1
-                print(f"  ✓ Inserted (ID: {result[0]})")
-            else:
-                print(f"  ⊘ Skipped (duplicate)")
-            
-            conn.commit()
-            
-        except Exception as e:
-            conn.rollback()
-            print(f"  ✗ Error: {e}")
-    
-    return inserted_count
-
-
 def normalize_job_types(cursor, conn):
     """
     Normalisiert job_type Werte nach dem Einfügen.
