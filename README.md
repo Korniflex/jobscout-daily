@@ -120,7 +120,7 @@ class Job(BaseModel):
 
 ---
 
-### 4️⃣ **Hauptskript** (`main_new.py`)
+### 4️⃣ **Hauptskript** (`main.py`)
 
 Das Herzstück - läuft täglich automatisch:
 
@@ -233,13 +233,13 @@ jobs:
       - name: Run ingest
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python main_new.py
+        run: python main.py
 ```
 
 **Was passiert hier?**
 1. GitHub startet jeden Tag um 6 Uhr morgens eine virtuelle Maschine
 2. Installiert Python + Dependencies
-3. Führt `main_new.py` aus
+3. Führt `main.py` aus
 4. Speichert neue Jobs in Neon-Datenbank
 
 ---
@@ -323,7 +323,7 @@ SLACK_SIGNING_SECRET=...
 
 ### 5. Einmalig: Jobs importieren
 ```bash
-python main_new.py
+python main.py
 ```
 
 ### 6. Slackbot starten
@@ -429,4 +429,5 @@ ON CONFLICT (hash_value) DO NOTHING
 Erstellt von [Dein Team] - Data Analysts @ [Deine Firma]
 
 **Happy Job Hunting! 🎯**
+
 
