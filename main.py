@@ -56,6 +56,91 @@ def upsert_jobs(jobs: list[Job], cursor, conn) -> int:
     
     return inserted_count
 
+# DB-Upsert Funktion - FIXED: Return inserted count
+def upsert_jobs(jobs: list[Job], cursor, conn) -> int:
+    """
+    Speichert normalisierte Jobs in PostgreSQL.
+    Returns: Anzahl der tatsächlich eingefügten Jobs
+    """
+    inserted_count = 0
+    
+    for job in jobs:
+        raw_str = f"{job.title}-{job.company}-{job.location}-{job.source}-{job.id}-{job.job_type}-{job.remote}"
+        hash_value = hashlib.sha256(raw_str.encode("utf-8")).hexdigest()
+        
+        print(f"[DB] Attempting insert: {job.title} | {job.company} ({job.source})")
+        
+        try:
+            cursor.execute("""
+                INSERT INTO jobs (source, title, company, location, job_type, work_mode, posted_at, url, hash_value)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (hash_value) DO NOTHING
+                RETURNING id
+            """, (
+                job.source or "",
+                job.title or "",
+                job.company or "",
+                job.location or "",
+                job.job_type or "",
+                job.remote or "",
+                job.posted_at or None,
+                str(job.url) if job.url else "",
+                hash_value
+            ))
+            
+            # Check if row was actually inserted
+            result = cursor.fetchone()
+            if result:
+                inserted_count += 1
+                print(f"  ✓ Inserted (ID: {result[0]})")
+            else:
+                print(f"  ⊘ Skipped (duplicate)")
+            
+            conn.commit()
+            
+        except Exception as e:
+            conn.rollback()
+            print(f"  ✗ Error: {e}")
+    
+    return inserted_count
+
+
+def normalize_job_types(cursor, conn):
+    """
+    Normalisiert job_type Werte nach dem Einfügen.
+    Ersetzt englische Begriffe durch deutsche.
+    """
+    print("→ Normalizing job_type values...")
+    
+    normalization_sql = """
+        UPDATE public.jobs
+        SET job_type = CASE
+            WHEN job_type IN ('Full-Time', 'full_time', 'Full-time', 'Full-time permanent') THEN 'Vollzeit'
+            WHEN job_type IN ('Half-Time', 'half_time', 'Part-Time', 'Part-time', 'part_time') THEN 'Teilzeit'
+            WHEN job_type LIKE '%Internship%' THEN 'Praktikum'
+            WHEN job_type = 'contract' THEN 'Vertrag'
+            WHEN job_type = 'freelance' THEN 'Freelancer'
+            WHEN job_type = 'Apprenticeship' THEN 'Ausbildung'
+            ELSE job_type
+        END
+        WHERE job_type IN (
+            'Full-Time', 'full_time', 'Full-time', 'Full-time permanent',
+            'Half-Time', 'half_time', 'Part-Time', 'Part-time', 'part_time',
+            'contract', 'freelance', 'Apprenticeship'
+        ) OR job_type LIKE '%Internship%';
+    """
+    
+    try:
+        cursor.execute(normalization_sql)
+        rows_updated = cursor.rowcount
+        conn.commit()
+        print(f"  ✓ Normalized {rows_updated} job_type values\n")
+        return rows_updated
+    except Exception as e:
+        conn.rollback()
+        print(f"  ✗ Error normalizing job_type: {e}\n")
+        return 0
+
 
 # Optional: Run logging
 USE_RUN_TABLE = os.getenv("USE_RUN_TABLE") == "1"
