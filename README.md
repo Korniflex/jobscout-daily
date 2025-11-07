@@ -8,7 +8,7 @@
 ```
 APIs (Remotive, Arbeitnow, Jobicy)
     ↓
-Python sammelt Jobs (main_new.py)
+Python sammelt Jobs (main.py)
     ↓
 Normalisierung & Deduplizierung
     ↓
@@ -35,7 +35,7 @@ JobScout/
 │   ├── schema.py          # Datenmodelle (Job, CommonQuery)
 │   └── db_conn.py         # Datenbankverbindung
 │
-├── main_new.py            # ⭐ Hauptskript für täglichen Import
+├── main.py            # ⭐ Hauptskript für täglichen Import
 ├── slackbot_app.py        # Slack-Integration
 ├── requirements_render.txt # Python-Abhängigkeiten
 └── .github/workflows/     # Automatisierung
@@ -429,3 +429,4 @@ ON CONFLICT (hash_value) DO NOTHING
 Erstellt von [Dein Team] - Data Analysts @ [Deine Firma]
 
 **Happy Job Hunting! 🎯**
+
