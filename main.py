@@ -8,7 +8,7 @@ import os
 import psycopg2
 import hashlib
 
-# DB-Upsert Funktion - FIXED: Return inserted count
+# DB-Upsert Funktion
 def upsert_jobs(jobs: list[Job], cursor, conn) -> int:
     """
     Speichert normalisierte Jobs in PostgreSQL.
@@ -44,15 +44,15 @@ def upsert_jobs(jobs: list[Job], cursor, conn) -> int:
             result = cursor.fetchone()
             if result:
                 inserted_count += 1
-                print(f"  ✓ Inserted (ID: {result[0]})")
+                print(f" Inserted (ID: {result[0]})")
             else:
-                print(f"  ⊘ Skipped (duplicate)")
+                print(f" Skipped (duplicate)")
             
             conn.commit()
             
         except Exception as e:
             conn.rollback()
-            print(f"  ✗ Error: {e}")
+            print(f" Error: {e}")
     
     return inserted_count
 
@@ -61,7 +61,7 @@ def normalize_job_types(cursor, conn):
     Normalisiert job_type Werte nach dem Einfügen.
     Ersetzt englische Begriffe durch deutsche.
     """
-    print("→ Normalizing job_type values...")
+    print("Normalizing job_type values...")
     
     normalization_sql = """
         UPDATE public.jobs
@@ -85,15 +85,15 @@ def normalize_job_types(cursor, conn):
         cursor.execute(normalization_sql)
         rows_updated = cursor.rowcount
         conn.commit()
-        print(f"  ✓ Normalized {rows_updated} job_type values\n")
+        print(f" Normalized {rows_updated} job_type values\n")
         return rows_updated
     except Exception as e:
         conn.rollback()
-        print(f"  ✗ Error normalizing job_type: {e}\n")
+        print(f" Error normalizing job_type: {e}\n")
         return 0
 
 
-# Optional: Run logging
+# Run logging
 USE_RUN_TABLE = os.getenv("USE_RUN_TABLE") == "1"
 
 def _log_run_start(cur, conn):
@@ -138,35 +138,35 @@ def main():
     
     try:
         # 1. Connect to database
-        print("→ Connecting to database...")
+        print("Connecting to database...")
         conn = get_conn()
         cur = conn.cursor()
-        print("  ✓ Connected\n")
+        print("Connected\n")
         
         # 2. Optional: Log run start
         run_id = _log_run_start(cur, conn)
         
         # 3. Fetch jobs from APIs
-        print("→ Fetching jobs from APIs...")
+        print("Fetching jobs from APIs...")
         common_params = CommonQuery(
             category="IT",
             limit=100
         )
         all_raws = load_params(common_params)
-        print(f"  ✓ API calls completed\n")
+        print(f"API calls completed\n")
         
         # 4. Normalize jobs
-        print("→ Normalizing jobs...")
+        print("Normalizing jobs...")
         all_normalized = normalize_jobs(all_raws)
-        print(f"  ✓ Normalized {len(all_normalized)} jobs\n")
+        print(f"Normalized {len(all_normalized)} jobs\n")
         
         if len(all_normalized) == 0:
-            print("⚠ Warning: No jobs to insert!\n")
+            print("Warning: No jobs to insert!\n")
             _log_run_end(cur, conn, run_id, 0, 0, "No jobs fetched")
             return
         
         # 5. Show sample
-        print("→ Sample jobs:")
+        print("Sample jobs:")
         for j in all_normalized[:3]:
             print(f"  • {j.title} - {j.company} ({j.source})")
         if len(all_normalized) > 3:
@@ -175,21 +175,21 @@ def main():
             print()
         
         # 6. Insert into database
-        print("→ Inserting into database...")
+        print("Inserting into database...")
         rows_inserted = upsert_jobs(all_normalized, cur, conn)
-        print(f"  ✓ Inserted {rows_inserted} new jobs (skipped {len(all_normalized) - rows_inserted} duplicates)\n")
+        print(f"Inserted {rows_inserted} new jobs (skipped {len(all_normalized) - rows_inserted} duplicates)\n")
         
         # 7. Log success
         _log_run_end(cur, conn, run_id, len(all_normalized), rows_inserted, None)
         
         print(f"{'='*60}")
-        print(f"✓ SUCCESS - {rows_inserted}/{len(all_normalized)} jobs added to database")
+        print(f"SUCCESS - {rows_inserted}/{len(all_normalized)} jobs added to database")
         print(f"{'='*60}\n")
         
     except Exception as e:
         error_msg = f"{type(e).__name__}: {e}"
         print(f"\n{'='*60}")
-        print(f"✗ ERROR - Ingestion failed")
+        print(f"ERROR - Ingestion failed")
         print(f"{'='*60}")
         print(f"Error: {error_msg}\n")
         
@@ -203,7 +203,7 @@ def main():
             cur.close()
         if conn:
             conn.close()
-            print("→ Database connection closed\n")
+            print("Database connection closed\n")
 
 
 if __name__ == "__main__":
