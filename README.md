@@ -364,7 +364,7 @@ ALTER TABLE jobs ADD CONSTRAINT unique_hash UNIQUE (hash_value);
 
 ## 📈 Nächste Schritte / Erweiterungen
 
-- [ ] Weitere APIs hinzufügen (LinkedIn, Indeed)
+- [ ] API Agentur fuer Arbeit ( braucht Zugang als Developper von Agentur fuer Arbeit)
 - [ ] Email-Alerts für neue Jobs
 - [ ] Web-Dashboard (Flask/Streamlit)
 - [ ] ML-basierte Job-Recommendations
@@ -428,6 +428,7 @@ ON CONFLICT (hash_value) DO NOTHING
 Erstellt von [Dein Team] - Data Analysts @ [Deine Firma]
 
 **Happy Job Hunting! 🎯**
+
 
 
 
