@@ -204,7 +204,7 @@ def cmd_jobs(ack, respond, command):
 | `location` | TEXT | Standort |
 | `job_type` | TEXT | "Vollzeit", "Teilzeit", "Praktikum"... |
 | `work_mode` | TEXT | "remote", "hybrid", "onsite" |
-| `posted_at` | TIMESTAMP | Veröffentlichungsdatum |
+| `posted_at` | TEXT | Veröffentlichungsdatum |
 | `url` | TEXT | Link zur Stelle |
 | `hash_value` | TEXT | Eindeutiger Hash (für Duplikat-Check) |
 
@@ -428,6 +428,7 @@ ON CONFLICT (hash_value) DO NOTHING
 Erstellt von [Dein Team] - Data Analysts @ [Deine Firma]
 
 **Happy Job Hunting! 🎯**
+
 
 
 
