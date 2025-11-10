@@ -60,36 +60,92 @@ def normalize_job_types(cursor, conn):
     """
     Normalisiert job_type Werte nach dem Einfügen.
     Ersetzt englische Begriffe durch deutsche.
+    Verwendet CASE-insensitive Matching für bessere Abdeckung.
     """
     print("Normalizing job_type values...")
     
     normalization_sql = """
         UPDATE public.jobs
         SET job_type = CASE
-    WHEN job_type IN ('Full-Time', 'full_time', 'Full-time', 'Full-time permanent') THEN 'Vollzeit'
-    WHEN job_type IN ('Half-Time', 'half_time', 'Part-Time', 'Part-time', 'part_time' ) THEN 'Teilzeit'
-    WHEN job_type IN ('Full-time permanent, experienced') THEN 'Vollzeit unbefristet, erfahren'
-    WHEN job_type IN ('Full-time permanent, mid') THEN 'Vollzeit unbefristet, mittleres Erfahrungsniveau'
-    WHEN job_type IN ('Working student, berufseinstieg') THEN 'Werkstudent, Berufseinsteiger'
-    WHEN job_type = 'berufseinstieg' THEN 'Berufseinsteiger'
-    WHEN job_type LIKE '%Internship%' THEN 'Praktikum'
-    WHEN job_type IN ('contract', 'Contract') THEN 'Vertrag'
-    WHEN job_type = 'freelance' THEN 'Freelancer'
-    WHEN job_type = 'Apprenticeship' THEN 'Ausbildung'
-    WHEN job_type = 'Working student' THEN 'Werkstudent'
-    ELSE job_type
-    END;
+            -- Vollzeit Varianten
+            WHEN LOWER(job_type) IN ('full-time', 'full_time', 'fulltime', 'full time') 
+                THEN 'Vollzeit'
+            WHEN LOWER(job_type) LIKE '%full-time permanent%' 
+                THEN 'Vollzeit unbefristet'
+            WHEN LOWER(job_type) LIKE '%full-time%experienced%' 
+                THEN 'Vollzeit unbefristet, erfahren'
+            WHEN LOWER(job_type) LIKE '%full-time%mid%' 
+                THEN 'Vollzeit unbefristet, mittleres Erfahrungsniveau'
+            
+            -- Teilzeit Varianten
+            WHEN LOWER(job_type) IN ('half-time', 'half_time', 'halftime', 'part-time', 'part_time', 'parttime', 'part time')
+                THEN 'Teilzeit'
+            
+            -- Praktikum
+            WHEN LOWER(job_type) LIKE '%internship%' OR LOWER(job_type) LIKE '%praktikum%'
+                THEN 'Praktikum'
+            
+            -- Vertrag
+            WHEN LOWER(job_type) IN ('contract', 'contractor')
+                THEN 'Vertrag'
+            
+            -- Freelancer
+            WHEN LOWER(job_type) IN ('freelance', 'freelancer')
+                THEN 'Freelancer'
+            
+            -- Ausbildung
+            WHEN LOWER(job_type) IN ('apprenticeship', 'ausbildung')
+                THEN 'Ausbildung'
+            
+            -- Werkstudent
+            WHEN LOWER(job_type) LIKE '%working student%' OR LOWER(job_type) LIKE '%werkstudent%'
+                THEN 'Werkstudent'
+            
+            -- Berufseinsteiger
+            WHEN LOWER(job_type) LIKE '%berufseinstieg%' OR LOWER(job_type) LIKE '%entry%level%'
+                THEN 'Berufseinsteiger'
+            
+            -- Wenn nichts passt, Original behalten
+            ELSE job_type
+        END
+        WHERE job_type IS NOT NULL
+          AND job_type != '';
     """
     
     try:
         cursor.execute(normalization_sql)
         rows_updated = cursor.rowcount
         conn.commit()
-        print(f" Normalized {rows_updated} job_type values\n")
+        print(f"✓ Normalized {rows_updated} job_type values\n")
+        
+        # Optional: Zeige welche Werte noch nicht normalisiert sind
+        cursor.execute("""
+            SELECT DISTINCT job_type, COUNT(*) as count
+            FROM jobs
+            WHERE job_type IS NOT NULL 
+              AND job_type NOT IN (
+                'Vollzeit', 'Teilzeit', 'Praktikum', 'Vertrag', 
+                'Freelancer', 'Ausbildung', 'Werkstudent', 'Berufseinsteiger',
+                'Vollzeit unbefristet', 'Vollzeit unbefristet, erfahren',
+                'Vollzeit unbefristet, mittleres Erfahrungsniveau'
+              )
+            GROUP BY job_type
+            ORDER BY count DESC
+            LIMIT 10;
+        """)
+        
+        unmapped = cursor.fetchall()
+        if unmapped:
+            print("⚠ Noch nicht gemappte job_type Werte:")
+            for job_type, count in unmapped:
+                print(f"  • {job_type}: {count}x")
+            print()
+        
         return rows_updated
+        
     except Exception as e:
         conn.rollback()
-        print(f" Error normalizing job_type: {e}\n")
+        print(f"✗ Error normalizing job_type: {e}\n")
         return 0
 
 
