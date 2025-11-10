@@ -425,9 +425,11 @@ ON CONFLICT (hash_value) DO NOTHING
 
 ## 👥 Contributors
 
-Erstellt von [Dein Team] - Data Analysts @ [Deine Firma]
+Erstellt von 
+Soren Ehlers, Alexander Leypold, Iuliia Serbina, Sandra Koch  - 
 
 **Happy Job Hunting! 🎯**
+
 
 
 
