@@ -310,7 +310,7 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 ### 3. Dependencies installieren
 ```bash
-pip install -r requirements_render.txt
+pip install -r requirements.txt
 ```
 
 ### 4. `.env` Datei erstellen
@@ -428,6 +428,7 @@ ON CONFLICT (hash_value) DO NOTHING
 Erstellt von [Dein Team] - Data Analysts @ [Deine Firma]
 
 **Happy Job Hunting! 🎯**
+
 
 
 
