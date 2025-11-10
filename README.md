@@ -207,7 +207,6 @@ def cmd_jobs(ack, respond, command):
 | `posted_at` | TIMESTAMP | Veröffentlichungsdatum |
 | `url` | TEXT | Link zur Stelle |
 | `hash_value` | TEXT | Eindeutiger Hash (für Duplikat-Check) |
-| `created_at` | TIMESTAMP | Wann in DB eingefügt |
 
 **Wichtig:** `hash_value` ist der Unique Constraint → verhindert Duplikate!
 
@@ -429,5 +428,6 @@ ON CONFLICT (hash_value) DO NOTHING
 Erstellt von [Dein Team] - Data Analysts @ [Deine Firma]
 
 **Happy Job Hunting! 🎯**
+
 
 
